@@ -1,0 +1,221 @@
+import pyvisa
+import time
+import atexit
+from time import sleep, strftime, localtime
+from datetime import timedelta
+import csv
+import os
+import threading
+import RPi.GPIO as GPIO
+import smbus
+from pyvisa.constants import StopBits, Parity
+
+
+"""
+Creates a resource manager and performs proper connection to multimeter device.
+Sets parameters
+"""
+
+
+def CreateTimer():
+    return threading.Timer(2.0, "Timer created")
+
+def StartTimer():
+    return
+
+def EndTimer():
+    return
+
+def secondsToStr(elapsed=None):
+    if elapsed is None:
+        return strftime("%Y-%m-%d %H:%M:%S", localtime())
+    else:
+        return str(timedelta(seconds=elapsed))
+
+def log(s, elapsed=None):
+    line = "="*40
+    print(line)
+    print(secondsToStr(), '-', s)
+    if elapsed:
+        print("Elapsed time:", elapsed)
+    print(line)
+    print()
+
+def endlog():
+    end = time()
+    elapsed = end-start
+    log("End Program", secondsToStr(elapsed))
+
+#start = time()
+#atexit.register(endlog)
+#log("Start Program")
+
+
+#TODO - load lookup tables
+def setup():
+        rm=pyvisa.ResourceManager()
+        resources = rm.list_resources()
+        print(resources)
+        print(rm)
+        if resources == None:
+            print("No connected devices found")
+    
+        DMM = rm.open_resource(resources[0],
+            baud_rate=9600, data_bits=8, flow_control=4,
+            parity = Parity.none,stop_bits=StopBits.two)
+        DMM.write("SYST:REM")
+        sleep(1)
+        #clear buffers
+       
+        #set read/write terminators to dictate end of command"
+        DMM.read_termination = '\n'
+        DMM.write_termination = '\n'
+        DMM.write("*rst; status:preset; *cls")
+        #Enable remote mode to interface with multimeter
+        sleep(1)
+        DMM.write("*IDN?")
+       
+        sleep(1)
+        print("Connection Established with " + DMM.read())
+        return DMM
+
+
+def runAutomatedTest(DMM):
+    return measureResistance(DMM)
+
+"""
+Issues a measurement command, performs measurement, and returns measurement value
+"""
+def measureResistance(DMM):
+    print("Initated measurement command")
+    meas = DMM.query("MEAS:RES?")
+    res = DMM.query_ascii_values("MEAS:RES?")
+    print("Measured resistance:" + str(res[0]) + " ohms")
+    #clear buffer
+    DMM.write("*rst; status:preset; *cls")
+    return res
+
+
+"""
+Creates a new CSV file for the cable tested or update existing CSV and append new run
+"""
+def createNewCSV(serial, resistance):
+    if(os.path.exists(serial + ".csv")):
+        #just append to newline
+        append_write = 'a'
+    else:
+        append_write = 'w'
+
+    #create new file
+    with open(serial + ".csv", append_write,newline="") as csvfile:
+        filewriter = csv.writer(csvfile, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        #filewriter.writerow(['Cable Serial#', resistance])
+        filewriter.writerow(['Cable Serial#','Test Run #' 'Measured Resistance', 'Expected Resistance', 'Time Elapsed, ''Pass/Fail'])
+
+
+
+#TODO - Add validation checks against lookuptables
+def ValidateData():
+    return
+
+#TODO - load lookuptables into memory
+def loadLookUpTables():
+    return
+
+
+
+def DeterminePassFail():
+    #Compare resistance to baseline
+    return
+
+
+def GPIO_SETUP():
+    
+   # GPIO.output(chan_list, GPIO.LOW) # all LOW
+    
+    GPIO.setmode(GPIO.BOARD) #selects by GPIO (e.g GPIO4)
+    list_low = (22,24,26)
+    list_high = () 
+    
+    GPIO.setup(list_low, GPIO.OUT)
+    GPIO.setup(list_high, GPIO.OUT)
+    
+    GPIO.output(list_high,GPIO.HIGH)
+  #  loop through 50 times, on/off for 1 second
+    GPIO.output(list_low,GPIO.LOW)
+    #print(GPIO.input(4))
+    
+    #GPIO.cleanup()
+    
+def I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_VAL_J7, D1_GPB_VAL_J7, D2_GPA_VAL_J7, D2_GPB_VAL_J7):
+    bus = smbus.SMBus(1)
+    DEVICE1 = 0x20 # Device address (A0-A2)
+    DEVICE2 = 0x21
+    
+    # Pin direction register
+    IODIRA = 0x00
+    IODIRB = 0x01
+    
+    OLATA  = 0x14 # GPA
+    OLATB  = 0x15 # GPB
+   #setting to output mode
+    
+    bus.write_byte_data(DEVICE1,IODIRA,0x00)
+    bus.write_byte_data(DEVICE1,IODIRB,0x00)
+    bus.write_byte_data(DEVICE2,IODIRA,0x00)
+    bus.write_byte_data(DEVICE2,IODIRB,0x00)
+        
+
+# Set output all 8 output bits to 0
+    
+    D1_GPA_VAL = D1_GPA_VAL_J6 | D1_GPA_VAL_J7 
+    D1_GPB_VAL = D1_GPB_VAL_J6 | D1_GPB_VAL_J7
+    D2_GPA_VAL = D2_GPA_VAL_J6 | D2_GPA_VAL_J7
+    D2_GPB_VAL = D2_GPB_VAL_J6 | D2_GPB_VAL_J7
+    
+    bus.write_byte_data(DEVICE1,OLATA,D1_GPA_VAL)
+    bus.write_byte_data(DEVICE1,OLATB,D1_GPB_VAL)
+    
+    bus.write_byte_data(DEVICE2,OLATA,D2_GPA_VAL)
+    bus.write_byte_data(DEVICE2,OLATB,D2_GPB_VAL)
+    
+    
+
+
+if __name__ == '__main__':
+                #Setup
+                #take user input serial number
+                #command == start
+                #run automated tesst
+                #validate data
+                # DeterminePassFail
+                #output to csv(create new csv upon recieving a new cable, otherwise update)
+                DMM = setup()
+                
+                GPIO_SETUP()
+                
+                D1_GPA_VAL_J6 = 0
+                D1_GPB_VAL_J6 = 0
+                
+                D2_GPA_VAL_J6 = 0x10
+                D2_GPB_VAL_J6 = 0
+                
+                
+                D1_GPA_VAL_J7 = 0
+                D1_GPB_VAL_J7 = 0
+                
+                D2_GPA_VAL_J7 = 0x0A
+                D2_GPB_VAL_J7 = 0
+                
+                
+                I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_VAL_J7, D1_GPB_VAL_J7, D2_GPA_VAL_J7, D2_GPB_VAL_J7)
+                res = runAutomatedTest(DMM)
+                #createNewCSV("010100",res)
+
+
+
+
+
+
+#DMM.write("SENSe:RESistance:RANGe:AUTO?")
