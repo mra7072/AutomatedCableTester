@@ -135,8 +135,8 @@ def GPIO_SETUP():
    # GPIO.output(chan_list, GPIO.LOW) # all LOW
     
     GPIO.setmode(GPIO.BOARD) #selects by GPIO (e.g GPIO4)
-    list_low = (22,24,26)
-    list_high = () 
+    list_low = ()
+    list_high = (22,24,26)
     
     GPIO.setup(list_low, GPIO.OUT)
     GPIO.setup(list_high, GPIO.OUT)
@@ -205,12 +205,14 @@ if __name__ == '__main__':
                 D1_GPA_VAL_J7 = 0
                 D1_GPB_VAL_J7 = 0
                 
-                D2_GPA_VAL_J7 = 0x0A
+                D2_GPA_VAL_J7 = 0x02
                 D2_GPB_VAL_J7 = 0
                 
-                
+                                
                 I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_VAL_J7, D1_GPB_VAL_J7, D2_GPA_VAL_J7, D2_GPB_VAL_J7)
                 res = runAutomatedTest(DMM)
+                sleep(1)
+                runAutomatedTest(DMM)
                 #createNewCSV("010100",res)
 
 
