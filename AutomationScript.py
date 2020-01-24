@@ -132,11 +132,15 @@ def GPIO_SETUP(list_low,list_high):
     GPIO.setmode(GPIO.BOARD) #selects by GPIO (e.g GPIO4)
 
     GPIO.setup(list_low, GPIO.OUT)
+
     GPIO.setup(list_high, GPIO.OUT)
 
-    GPIO.output(list_high,GPIO.HIGH)
-  #  loop through 50 times, on/off for 1 second
+    #precedence
     GPIO.output(list_low,GPIO.LOW)
+    GPIO.output(list_high,GPIO.HIGH)
+
+  #  loop through 50 times, on/off for 1 second
+
     #print(GPIO.input(4))
 
     #GPIO.cleanup()
