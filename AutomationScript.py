@@ -47,34 +47,7 @@ def endlog():
     elapsed = end-start
     log("End Program", secondsToStr(elapsed))
 
-
-def setup():
-        rm=pyvisa.ResourceManager()
-        resources = rm.list_resources()
-        print(resources)
-        print(rm)
-        if resources == None:
-            print("No connected devices found")
-
-        DMM = rm.open_resource(resources[0],
-            baud_rate=9600, data_bits=8, flow_control=4,
-            parity = Parity.none,stop_bits=StopBits.two)
-        DMM.write("SYST:REM")
-        sleep(1)
-        #clear buffers
-
-        #set read/write terminators to dictate end of command"
-        DMM.read_termination = '\n'
-        DMM.write_termination = '\n'
-        DMM.write("*rst; status:preset; *cls")
-        #Enable remote mode to interface with multimeter
-        sleep(1)
-        DMM.write("*IDN?")
-
-        sleep(1)
-        print("Connection Established with " + DMM.read())
-        return DMM
-
+        
 
 def runAutomatedTest(DMM):
     return measureResistance(DMM)
@@ -125,7 +98,6 @@ def DeterminePassFail():
     #Compare resistance to baseline
     return
 
-
 def GPIO_SETUP(list_low,list_high):
 
    # GPIO.output(chan_list, GPIO.LOW) # all LOW
@@ -153,7 +125,6 @@ def I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_V
     # Pin direction register
     IODIRA = 0x00
     IODIRB = 0x01
-
     OLATA  = 0x14 # GPA
     OLATB  = 0x15 # GPB
 
@@ -180,17 +151,26 @@ def I2C_GPIO(J6_LIST, J7_LIST):
     DEVICE1 = 0x20 # Device address (A0-A2)
     DEVICE2 = 0x21
 
-    D1_GPA_VAL_J6 = J6_LIST[0]
-    D1_GPB_VAL_J6 = J6_LIST[1]
+    print(J6_LIST)
+    print(J7_LIST)
+    
+    D1_GPA_VAL_J6 =   int(J6_LIST[0], 16)
+    
+    D1_GPB_VAL_J6 =   int(J6_LIST[1], 16)
+    
 
-    D2_GPA_VAL_J6 = J6_LIST[2]
-    D2_GPB_VAL_J6 = J6_LIST[3]
+    D2_GPA_VAL_J6 =   int(J6_LIST[2], 16)
+    
+        
+    D2_GPB_VAL_J6 =   int(J6_LIST[3], 16)
 
-    D1_GPA_VAL_J7 = J7_LIST[0]
-    D1_GPB_VAL_J7 = J7_LIST[1]
 
-    D2_GPA_VAL_J7 = J7_LIST[2]
-    D2_GPB_VAL_J7 = J7_LIST[3]
+    D1_GPA_VAL_J7 =   int(J7_LIST[0], 16)
+    D1_GPB_VAL_J7 =   int(J7_LIST[1], 16)
+    
+    D2_GPA_VAL_J7 =   int(J7_LIST[2], 16)
+
+    D2_GPB_VAL_J7 =   int(J7_LIST[3], 16)
 
 
     # Pin direction register
@@ -219,6 +199,8 @@ def I2C_GPIO(J6_LIST, J7_LIST):
 
 
 
+
+
 def get_JSON_file():
     with open('config.json') as f:
       data = json.load(f)
@@ -226,7 +208,33 @@ def get_JSON_file():
 
   # for x in data:
   #     print(x["Name"])
+def setup():
+        rm=pyvisa.ResourceManager()
+        resources = rm.list_resources()
+        print(resources)
+        print(rm)
+        if resources == None:
+            print("No connected devices found")
 
+        DMM = rm.open_resource(resources[0],
+            baud_rate=9600, data_bits=8, flow_control=4,
+            parity = Parity.none,stop_bits=StopBits.two)
+        DMM.write("SYST:REM")
+        sleep(1)
+        #clear buffers
+
+        #set read/write terminators to dictate end of command"
+        DMM.read_termination = '\n'
+        DMM.write_termination = '\n'
+        DMM.write("*rst; status:preset; *cls")
+        #Enable remote mode to interface with multimeter
+        sleep(1)
+        DMM.write("*IDN?")
+
+        sleep(1)
+        print("Connection Established with " + DMM.read())
+        return DMM
+    
 if __name__ == '__main__':
                 #Setup
                 #take user input serial number
@@ -235,6 +243,9 @@ if __name__ == '__main__':
                 #validate data
                 # DeterminePassFail
                 #output to csv(create new csv upon recieving a new cable, otherwise update)
+                
+          
+               
                 DMM = setup()
                 file = get_JSON_file()
                 J7_LIST = [x for x in file if x['Tag'] == "J7"]
@@ -249,10 +260,13 @@ if __name__ == '__main__':
                             J6_GPIO_HIGH = J6['GPIO_HIGH']
                             MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW ))
                             MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+                            print("Merged LOW" + str(MERGED_GPIO_LOW))
+                            print("Merged HIGH" + str(MERGED_GPIO_HIGH))
                             GPIO_SETUP(MERGED_GPIO_LOW,MERGED_GPIO_HIGH)
                             I2C_GPIO(J6_I2C,J7_I2C)
                             res = runAutomatedTest(DMM)
                             sleep(1)
+            
                             #print(str(MERGED_GPIO_HIGH) + "HIGH")
                             #print(str(MERGED_GPIO_LOW) + "LOW")
 
@@ -265,7 +279,7 @@ if __name__ == '__main__':
                 # D1_GPA_VAL_J6 = 0
                 # D1_GPB_VAL_J6 = 0
                 #
-                # D2_GPA_VAL_J6 = 0x10
+            
                 # D2_GPB_VAL_J6 = 0
                 #
                 # D1_GPA_VAL_J7 = 0
