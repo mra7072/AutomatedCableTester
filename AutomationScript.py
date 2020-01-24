@@ -151,8 +151,8 @@ def I2C_GPIO(J6_LIST, J7_LIST):
     DEVICE1 = 0x20 # Device address (A0-A2)
     DEVICE2 = 0x21
 
-    print(J6_LIST)
-    print(J7_LIST)
+    #print(J6_LIST)
+    #print(J7_LIST)
     
     D1_GPA_VAL_J6 =   int(J6_LIST[0], 16)
     
@@ -243,9 +243,6 @@ if __name__ == '__main__':
                 #validate data
                 # DeterminePassFail
                 #output to csv(create new csv upon recieving a new cable, otherwise update)
-                
-          
-               
                 DMM = setup()
                 file = get_JSON_file()
                 J7_LIST = [x for x in file if x['Tag'] == "J7"]
