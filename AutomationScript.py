@@ -260,12 +260,13 @@ if __name__ == '__main__':
                             J6_GPIO_HIGH = J6['GPIO_HIGH']
                             MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW ))
                             MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
-                            print("Merged LOW" + str(MERGED_GPIO_LOW))
-                            print("Merged HIGH" + str(MERGED_GPIO_HIGH))
+                            #print("Merged LOW" + str(MERGED_GPIO_LOW))
+                           # print("Merged HIGH" + str(MERGED_GPIO_HIGH))
                             GPIO_SETUP(MERGED_GPIO_LOW,MERGED_GPIO_HIGH)
                             I2C_GPIO(J6_I2C,J7_I2C)
+                            print(J7['Name'] + "----" + J6['Name'])
                             res = runAutomatedTest(DMM)
-                            sleep(1)
+                            sleep(1.5)
             
                             #print(str(MERGED_GPIO_HIGH) + "HIGH")
                             #print(str(MERGED_GPIO_LOW) + "LOW")
