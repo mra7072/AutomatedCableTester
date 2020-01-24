@@ -9,6 +9,7 @@ import threading
 import RPi.GPIO as GPIO
 import smbus
 from pyvisa.constants import StopBits, Parity
+import json
 
 
 """
@@ -46,12 +47,7 @@ def endlog():
     elapsed = end-start
     log("End Program", secondsToStr(elapsed))
 
-#start = time()
-#atexit.register(endlog)
-#log("Start Program")
 
-
-#TODO - load lookup tables
 def setup():
         rm=pyvisa.ResourceManager()
         resources = rm.list_resources()
@@ -59,14 +55,14 @@ def setup():
         print(rm)
         if resources == None:
             print("No connected devices found")
-    
+
         DMM = rm.open_resource(resources[0],
             baud_rate=9600, data_bits=8, flow_control=4,
             parity = Parity.none,stop_bits=StopBits.two)
         DMM.write("SYST:REM")
         sleep(1)
         #clear buffers
-       
+
         #set read/write terminators to dictate end of command"
         DMM.read_termination = '\n'
         DMM.write_termination = '\n'
@@ -74,7 +70,7 @@ def setup():
         #Enable remote mode to interface with multimeter
         sleep(1)
         DMM.write("*IDN?")
-       
+
         sleep(1)
         print("Connection Established with " + DMM.read())
         return DMM
@@ -130,58 +126,102 @@ def DeterminePassFail():
     return
 
 
-def GPIO_SETUP():
-    
+def GPIO_SETUP(list_low,list_high):
+
    # GPIO.output(chan_list, GPIO.LOW) # all LOW
-    
     GPIO.setmode(GPIO.BOARD) #selects by GPIO (e.g GPIO4)
-    list_low = ()
-    list_high = (22,24,26)
-    
+
     GPIO.setup(list_low, GPIO.OUT)
     GPIO.setup(list_high, GPIO.OUT)
-    
+
     GPIO.output(list_high,GPIO.HIGH)
   #  loop through 50 times, on/off for 1 second
     GPIO.output(list_low,GPIO.LOW)
     #print(GPIO.input(4))
-    
+
     #GPIO.cleanup()
-    
+
 def I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_VAL_J7, D1_GPB_VAL_J7, D2_GPA_VAL_J7, D2_GPB_VAL_J7):
     bus = smbus.SMBus(1)
     DEVICE1 = 0x20 # Device address (A0-A2)
     DEVICE2 = 0x21
-    
+
     # Pin direction register
     IODIRA = 0x00
     IODIRB = 0x01
-    
+
     OLATA  = 0x14 # GPA
     OLATB  = 0x15 # GPB
+
    #setting to output mode
-    
     bus.write_byte_data(DEVICE1,IODIRA,0x00)
     bus.write_byte_data(DEVICE1,IODIRB,0x00)
     bus.write_byte_data(DEVICE2,IODIRA,0x00)
     bus.write_byte_data(DEVICE2,IODIRB,0x00)
-        
 
-# Set output all 8 output bits to 0
-    
-    D1_GPA_VAL = D1_GPA_VAL_J6 | D1_GPA_VAL_J7 
+    D1_GPA_VAL = D1_GPA_VAL_J6 | D1_GPA_VAL_J7
     D1_GPB_VAL = D1_GPB_VAL_J6 | D1_GPB_VAL_J7
     D2_GPA_VAL = D2_GPA_VAL_J6 | D2_GPA_VAL_J7
     D2_GPB_VAL = D2_GPB_VAL_J6 | D2_GPB_VAL_J7
-    
+
     bus.write_byte_data(DEVICE1,OLATA,D1_GPA_VAL)
     bus.write_byte_data(DEVICE1,OLATB,D1_GPB_VAL)
-    
+
     bus.write_byte_data(DEVICE2,OLATA,D2_GPA_VAL)
     bus.write_byte_data(DEVICE2,OLATB,D2_GPB_VAL)
-    
-    
 
+
+def I2C_GPIO(J6_LIST, J7_LIST):
+    bus = smbus.SMBus(1)
+    DEVICE1 = 0x20 # Device address (A0-A2)
+    DEVICE2 = 0x21
+
+    D1_GPA_VAL_J6 = J6_LIST[0]
+    D1_GPB_VAL_J6 = J6_LIST[1]
+
+    D2_GPA_VAL_J6 = J6_LIST[2]
+    D2_GPB_VAL_J6 = J6_LIST[3]
+
+    D1_GPA_VAL_J7 = J7_LIST[0]
+    D1_GPB_VAL_J7 = J7_LIST[1]
+
+    D2_GPA_VAL_J7 = J7_LIST[2]
+    D2_GPB_VAL_J7 = J7_LIST[3]
+
+
+    # Pin direction register
+    IODIRA = 0x00
+    IODIRB = 0x01
+
+    OLATA  = 0x14 # GPA
+    OLATB  = 0x15 # GPB
+
+   #setting to output mode
+    bus.write_byte_data(DEVICE1,IODIRA,0x00)
+    bus.write_byte_data(DEVICE1,IODIRB,0x00)
+    bus.write_byte_data(DEVICE2,IODIRA,0x00)
+    bus.write_byte_data(DEVICE2,IODIRB,0x00)
+
+    D1_GPA_VAL = D1_GPA_VAL_J6 | D1_GPA_VAL_J7
+    D1_GPB_VAL = D1_GPB_VAL_J6 | D1_GPB_VAL_J7
+    D2_GPA_VAL = D2_GPA_VAL_J6 | D2_GPA_VAL_J7
+    D2_GPB_VAL = D2_GPB_VAL_J6 | D2_GPB_VAL_J7
+
+    bus.write_byte_data(DEVICE1,OLATA,D1_GPA_VAL)
+    bus.write_byte_data(DEVICE1,OLATB,D1_GPB_VAL)
+
+    bus.write_byte_data(DEVICE2,OLATA,D2_GPA_VAL)
+    bus.write_byte_data(DEVICE2,OLATB,D2_GPB_VAL)
+
+
+
+def get_JSON_file():
+    with open('config.json') as f:
+      data = json.load(f)
+      return data
+
+  # for x in data:
+  #     print(x["Name"])
 
 if __name__ == '__main__':
                 #Setup
@@ -192,27 +232,50 @@ if __name__ == '__main__':
                 # DeterminePassFail
                 #output to csv(create new csv upon recieving a new cable, otherwise update)
                 DMM = setup()
-                
-                GPIO_SETUP()
-                
-                D1_GPA_VAL_J6 = 0
-                D1_GPB_VAL_J6 = 0
-                
-                D2_GPA_VAL_J6 = 0x10
-                D2_GPB_VAL_J6 = 0
-                
-                
-                D1_GPA_VAL_J7 = 0
-                D1_GPB_VAL_J7 = 0
-                
-                D2_GPA_VAL_J7 = 0x02
-                D2_GPB_VAL_J7 = 0
-                
-                                
-                I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_VAL_J7, D1_GPB_VAL_J7, D2_GPA_VAL_J7, D2_GPB_VAL_J7)
-                res = runAutomatedTest(DMM)
-                sleep(1)
-                runAutomatedTest(DMM)
+                file = get_JSON_file()
+                J7_LIST = [x for x in file if x['Tag'] == "J7"]
+                J6_LIST = [x for x in file if x['Tag'] == "J6"]
+                for J7 in J7_LIST:
+                         J7_GPIO_LOW = J7['GPIO_LOW']
+                         J7_GPIO_HIGH = J7['GPIO_HIGH']
+                         J7_I2C = J7['I2C']
+                         for J6 in J6_LIST:
+                            J6_I2C = J6['I2C']
+                            J6_GPIO_LOW = J6['GPIO_LOW']
+                            J6_GPIO_HIGH = J6['GPIO_HIGH']
+                            MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW ))
+                            MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+                            GPIO_SETUP(MERGED_GPIO_LOW,MERGED_GPIO_HIGH)
+                            I2C_GPIO(J6_I2C,J7_I2C)
+                            res = runAutomatedTest(DMM)
+                            sleep(1)
+                            #print(str(MERGED_GPIO_HIGH) + "HIGH")
+                            #print(str(MERGED_GPIO_LOW) + "LOW")
+
+                #DMM = setup()
+                # list_low = ()
+                # list_high = (22,24,26)
+                #
+                # GPIO_SETUP(list_low,list_high)
+
+                # D1_GPA_VAL_J6 = 0
+                # D1_GPB_VAL_J6 = 0
+                #
+                # D2_GPA_VAL_J6 = 0x10
+                # D2_GPB_VAL_J6 = 0
+                #
+                # D1_GPA_VAL_J7 = 0
+                # D1_GPB_VAL_J7 = 0
+                #
+                # D2_GPA_VAL_J7 = 0x02
+                # D2_GPB_VAL_J7 = 0
+                #
+                # I2C_GPIO(D1_GPA_VAL_J6, D1_GPB_VAL_J6, D2_GPA_VAL_J6, D2_GPB_VAL_J6,D1_GPA_VAL_J7, D1_GPB_VAL_J7, D2_GPA_VAL_J7, D2_GPB_VAL_J7)
+
+                # res = runAutomatedTest(DMM)
+                # sleep(1)
+                # runAutomatedTest(DMM)
+
                 #createNewCSV("010100",res)
 
 
