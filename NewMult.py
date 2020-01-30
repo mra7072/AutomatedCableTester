@@ -191,7 +191,7 @@ def I2C_GPIO(J6_LIST, J7_LIST):
 
 
 def get_JSON_file():
-    with open('test.json') as f:
+    with open('9pin.json') as f:
       data = json.load(f)
       return data
 
@@ -230,9 +230,10 @@ def setup():
 Issues a measurement command, performs measurement, and returns measurement value
 """
 def measureResistance(DMM):
+    #DMM.write("SENS:ZERO:AUTO?")
     print("Initated measurement command")
-    DMM.write("MEAS:RES?")
-    sleep(1.45)
+    DMM.write("MEAS:RES? 1 , .01")
+    #sleep(0.25)
     res = DMM.read()
     print("Measured resistance:" + str(res) + " ohms")
     #clear buffer
@@ -269,7 +270,7 @@ if __name__ == '__main__':
                             print(J7['Name'] + "----" + J6['Name'])
                             res = runAutomatedTest(DMM)
                             #break
-                            sleep(.4)
+                            sleep(.25)
                          #break
             
                             #print(str(MERGED_GPIO_HIGH) + "HIGH")
