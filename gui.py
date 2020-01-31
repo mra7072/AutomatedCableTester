@@ -3,6 +3,7 @@ from kivy.uix.dropdown import DropDown
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.lang import Builder
@@ -26,44 +27,77 @@ class MyGrid(GridLayout):
         self.inside.padding = 10
         self.inside.spacing = 5
         self.inside.cols = 2
-        self.spinner = Spinner(
+        # self.spinner = Spinner(
+        # # default value shown
+        # text='View',
+        # # available values
+        # values=('Home', 'Settings', 'File Manager'),
+        # # just for positioning in our example
+        # size_hint=(None, None),
+        # size=(100, 44),
+        # pos_hint={'center_x': .5, 'center_y': .5})
+        #
+        # self.spinner.background_color = 0, 1, 0
+        # self.add_widget(self.spinner)
+
+
+
+        # self.inside.add_widget(Label(text="Enter Cable #: ",font_size=20))
+        # self.number = TextInput(multiline=False)
+        # self.inside.add_widget(self.number)
+
+
+
+        popup = Popup(title='Configure',
+        size_hint=(None, None), size=(500, 500))
+
+        box = GridLayout(row_default_height=50,row_force_default=True)
+        box.padding = 10
+        box.spacing = 5
+        box.cols = 2
+        box.add_widget(Label(text='Enter Cable #'))
+        cableInput = TextInput(multiline=False)
+        cableInput.bind(on_text_validate=self.on_enter)
+        box.add_widget(cableInput)
+
+
+        box.add_widget(Label(text='Select Cable Type'))
+        spinner = Spinner(
         # default value shown
-        text='View',
+        text='',
         # available values
-        values=('Home', 'Settings', 'File Manager'),
+        values=('T1', 'T2', 'T3'),
         # just for positioning in our example
-        size_hint=(None, None),
-        size=(100, 44),
-        pos_hint={'center_x': .5, 'center_y': .5})
+        size_hint=(0.3, 0.2),
+        pos_hint={'x': .35, 'y':.75})
+        spinner.bind(text=self.show_selected_value)
 
-        self.spinner.background_color = 0, 1, 0
-        self.add_widget(self.spinner)
+        box.add_widget(spinner)
+        g = GridLayout(cols=2, row_force_default=True, row_default_height=40)
+        g.padding = 5
+        g.spacing = 50
+        submit = Button(text='Submit',font_size=20,size_hint_x=None, width=200)
+        submit.background_color = 0, 1, 0, 1
+        submit.bind(on_release= lambda x: self.runTest())
+        submit.bind(on_release= lambda x: popup.dismiss())
+        submit.bind(on_release = self.pop)
+        submit.bind(on_release = self.puopen)
+        g.add_widget(submit)
+        reset = Button(text='Reset',font_size=20,size_hint_x=None, width=200)
+        g.add_widget(reset)
+
+        box.add_widget(g)
 
 
-        self.inside.add_widget(Label(text="Connection status: ",font_size=20))
-        self.switch = Switch(active=False)
-        self.inside.add_widget(self.switch)
+        popup.add_widget(box)
 
 
-
-        self.inside.add_widget(Label(text="Enter Cable #: ",font_size=20))
-        self.number = TextInput(multiline=False)
-        self.inside.add_widget(self.number)
+        self.start = Button(text='Start Test',font_size=20)
+        self.start.bind(on_release= lambda x: popup.open())
+        self.inside.add_widget(self.start)
 
         self.add_widget(self.inside)
 
-
-
-        self.type = self.createDropDownMenu()
-
-
-        self.add_widget(self.type)
-
-        self.start = Button(text='Start Test',font_size=20)
-        self.start.background_color = 0, 1, 0, 1
-        self.start.bind(on_release= lambda x: self.pressed())
-
-        self.add_widget(self.start)
 
         self.progress_label = Label(text="Progression: ",font_size=20)
 
@@ -72,9 +106,14 @@ class MyGrid(GridLayout):
         self.progress_bar = ProgressBar()
         self.progress_bar.padding = 10
         self.progress_bar.spacing = 5
-        self.start.bind(on_release = self.pop)
-        self.start.bind(on_release = self.puopen)
         self.add_widget(self.progress_bar)
+
+
+    def on_enter(instance, value):
+        print('Cable Serial #', value.text)
+
+    def show_selected_value(spinner, text,instance):
+        print('The Cable type selected is ', text.text)
 
 
     # the function which works when you clicj = k the button
@@ -84,24 +123,29 @@ class MyGrid(GridLayout):
 
     # To continuesly increasing the value of pb.
     def next(self, dt):
-        self.progress_label.text = "Progression :" + str(self.progress_bar.value)
+
+        self.progress_label.text = "Testing in progress :" + str(self.progress_bar.value)
         if self.progress_bar.value>= 100:
+            self.progress_label.text = "Testing complete :" + str(self.progress_bar.value)
             return False
         self.progress_bar.value += 1
 
     def puopen(self, instance):
-        Clock.schedule_interval(self.next, 1 / 25)
+        Clock.schedule_interval(self.next, 4/5)
+
+    #def toggleSubmitButton(self):
 
 
-    def pressed(self):
-        os.system('python AutomationScript.py')
 
+    def runTest(self):
+        print("HELLO")
+
+        #os.system('python AutomationScript.py')
 
 
     def createDropDownMenu(self):
         # create a dropdown with 10 buttons
         dropdown = DropDown()
-
         # When adding widgets, we need to specify the height manually
         # (disabling the size_hint_y) so the dropdown can calculate
         # the area it needs.
@@ -128,7 +172,7 @@ class MyGrid(GridLayout):
 
         dropdown.add_widget(btn)
 
-        mainbutton = Button(text='Select Cable Type',font_size=20)
+        mainbutton = Button(text='',font_size=20)
 
 
         mainbutton.bind(on_release=dropdown.open)
@@ -145,5 +189,5 @@ class MyApp(App):
 
 
 if __name__ == "__main__":
-    Config.set('kivy', 'keyboard_mode', 'systemandmulti')
+    Config.set('kivy', 'keyboard_mode', 'system')
     MyApp().run()
