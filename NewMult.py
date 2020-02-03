@@ -57,22 +57,27 @@ def runAutomatedTest(DMM):
 """
 Creates a new CSV file for the cable tested or update existing CSV and append new run
 """
-def createNewCSV(serial, resistance):
-    if(os.path.exists(serial + ".csv")):
-        #just append to newline
-        append_write = 'a'
-    else:
-        append_write = 'w'
-
+def createNewCSV(serial,cabletype):
+    # if(os.path.exists(serial + ".csv")):
+    #     #just append to newline
+    #     append_write = 'a'
+    # else:
+    #     append_write = 'w'
     #create new file
-    with open(serial + ".csv", append_write,newline="") as csvfile:
-        filewriter = csv.writer(csvfile, delimiter=',',
-                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        #filewriter.writerow(['Cable Serial#', resistance])
-        filewriter.writerow(['Cable Serial#','Test Run #' 'Measured Resistance', 'Expected Resistance', 'Time Elapsed, ''Pass/Fail'])
+    path = ""   
+    if cabletype == 'T1':
+        path = os.path.join("./Cable_Type_1",serial + ".csv")
+    if cabletype == 'T2':
+        path = os.path.join("./Cable_Type_2",serial + ".csv")
+    if cabletype == 'T3':
+        path = os.path.join("./Cable_Type_3",serial + ".csv")
 
+    csvfile = open(path, "w")
+    filewriter = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    filewriter.writerow(['Configuration','Measured-Resistance', 'Expected Resistance', 'Pass/Fail'])
 
-
+    return filewriter
 #TODO - Add validation checks against lookuptables
 def ValidateData():
     return
@@ -190,8 +195,8 @@ def I2C_GPIO(J6_LIST, J7_LIST):
 
 
 
-def get_JSON_file():
-    with open('9pin.json') as f:
+def get_JSON_file(filename):
+    with open(filename) as f:
       data = json.load(f)
       return data
 
@@ -240,6 +245,29 @@ def measureResistance(DMM):
     DMM.write("*rst; status:preset; *cls")
     return res
 
+def makeTypeDirectories():
+    if not os.path.exists('Cable_Type_1'):
+        os.makedirs('Cable_Type_1')
+    if not os.path.exists('Cable_Type_2'):
+        os.makedirs('Cable_Type_2')
+    if not os.path.exists('Cable_Type_3'):
+        os.makedirs('Cable_Type_3')
+
+def ValidateConnection(res):
+    if res >= 5:
+        #TODO for repeated test
+        return False
+    else:
+        return True
+
+
+
+def ValidateOpen(res):
+    if res >= 10000:
+        return True
+    else:
+        return False
+
 
 if __name__ == '__main__':
                 #Setup
@@ -250,9 +278,16 @@ if __name__ == '__main__':
                 # DeterminePassFail
                 #output to csv(create new csv upon recieving a new cable, otherwise update)
                 DMM = setup()
-                file = get_JSON_file()
+                file = get_JSON_file('test.json')
+                CableState = True
                 J7_LIST = [x for x in file if x['Tag'] == "J7"]
                 J6_LIST = [x for x in file if x['Tag'] == "J6"]
+                Connections = [x for x in file if x['Tag'] == "Connection"][0]
+                SerialNumber = "fucku"
+                CableType = "T1"
+                makeTypeDirectories()
+                fw = createNewCSV(SerialNumber,CableType)
+                start_time = time.time()
                 for J7 in J7_LIST:
                          J7_GPIO_LOW = J7['GPIO_LOW']
                          J7_GPIO_HIGH = J7['GPIO_HIGH']
@@ -267,10 +302,26 @@ if __name__ == '__main__':
                            # print("Merged HIGH" + str(MERGED_GPIO_HIGH))
                             GPIO_SETUP(MERGED_GPIO_LOW,MERGED_GPIO_HIGH)
                             I2C_GPIO(J6_I2C,J7_I2C)
-                            print(J7['Name'] + "----" + J6['Name'])
-                            res = runAutomatedTest(DMM)
-                            #break
+                            name = J7['Name'] + "-" + J6['Name']
+                            res = float(runAutomatedTest(DMM))
+                            state = True
+                            if name in Connections['Name']:
+                                state = ValidateConnection(res)
+                            else:
+                                state = ValidateOpen(res)
+
+                            if CableState == True and state == False:
+                                CableState = False
+
+                            fw.writerow([name,res, "N/A", "PASS" if state == True else "FAIL"])           #break
                             sleep(.25)
+                end_time = time.time()
+                Elapsed =  end_time - start_time
+                fw.writerow(["Cable Status","PASS" if CableState == True else "FAIL"])
+                fw.writerow(["Total Time Elapsed", Elapsed])
+                #fw.writerow(["Total Time Elapsed", Elapsed])
+
+
                          #break
             
                             #print(str(MERGED_GPIO_HIGH) + "HIGH")

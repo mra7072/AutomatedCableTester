@@ -25,6 +25,15 @@ def ValidateOpen(res):
     else:
         return True
 
+def makeTypeDirectories():
+    if not os.path.exists('Cable_Type_1'):
+        os.makedirs('Cable_Type_1')
+    if not os.path.exists('Cable_Type_2'):
+        os.makedirs('Cable_Type_2')
+    if not os.path.exists('Cable_Type_3'):
+        os.makedirs('Cable_Type_3')
+
+
 #Combination consists of making I2C and GPIO calls
 def createNewCSV(serial):
     # if(os.path.exists(serial + ".csv")):

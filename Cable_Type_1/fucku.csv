@@ -1,0 +1,5 @@
+Configuration,Measured-Resistance,Expected Resistance,Pass/Fail
+J1-9-J7-J3-3-J6,9.9e+37,N/A,PASS
+J1-8-J7-J3-3-J6,3.39232305,N/A,FAIL
+Cable Status,FAIL
+Total Time Elapsed,2.9568538665771484
