@@ -1,193 +1,125 @@
-import kivy
-from kivy.uix.dropdown import DropDown
-from kivy.app import App
-from kivy.uix.label import Label
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
-from kivy.lang import Builder
-from  kivy.uix.switch import Switch
-import os
-from kivy.config import Config
-from kivy.uix.spinner import Spinner
-from kivy.uix.settings import SettingsWithSidebar
-from kivy.uix.progressbar import ProgressBar
-from kivy.uix.popup import Popup
-from kivy.clock import Clock
-from kivy.uix.widget import Widget
-from kivy.properties import ObjectProperty
-
-
-class MyGrid(GridLayout):
-    def __init__(self, **kwargs):
-        super(MyGrid, self).__init__(**kwargs)
-        self.cols = 1
-        self.inside = GridLayout()
-        self.inside.padding = 10
-        self.inside.spacing = 5
-        self.inside.cols = 2
-        # self.spinner = Spinner(
-        # # default value shown
-        # text='View',
-        # # available values
-        # values=('Home', 'Settings', 'File Manager'),
-        # # just for positioning in our example
-        # size_hint=(None, None),
-        # size=(100, 44),
-        # pos_hint={'center_x': .5, 'center_y': .5})
-        #
-        # self.spinner.background_color = 0, 1, 0
-        # self.add_widget(self.spinner)
+import Tkinter as tk
+#from Tkinkter.Tkk import Combobox
+import ttk
+import tkMessageBox
+import tkFileDialog
 
 
 
-        # self.inside.add_widget(Label(text="Enter Cable #: ",font_size=20))
-        # self.number = TextInput(multiline=False)
-        # self.inside.add_widget(self.number)
+
+
+global kb
+kb = ""
+buttons = [
+'~','`','!','@','#','$','%','^','&','*','(',')','-','_','L',
+'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p','\\','7','8','9','BACK',
+'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l','[',']','4','5','6'
+,'SHIFT',
+'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.','?','/','1','2','3','SPACE',
+]
+
+
+def select(value):
+	if value == "BACK":
+		# allText = entry.get()[:-1]
+		# entry.delete(0, tkinter,END)
+		# entry.insert(0,allText)
+
+		snobj.delete(len(snobj.get())-1,tk.END)
+
+	elif value == "SPACE":
+		snobj.insert(tk.END, ' ')
+	elif value == " Tab ":
+		snobj.insert(tk.END, '    ')
+	else :
+		snobj.insert(tk.END,value)
 
 
 
-        popup = Popup(title='Configure',
-        size_hint=(None, None), size=(500, 500))
+def openKeyboard():
+        kb = tk.Tk("BITCH")
 
-        box = GridLayout(row_default_height=50,row_force_default=True)
-        box.padding = 10
-        box.spacing = 5
-        box.cols = 2
-        box.add_widget(Label(text='Enter Cable #'))
-        cableInput = TextInput(multiline=False)
-        cableInput.bind(on_text_validate=self.on_enter)
-        box.add_widget(cableInput)
+	varRow = 2
+	varColumn = 0
 
 
-        box.add_widget(Label(text='Select Cable Type'))
-        spinner = Spinner(
-        # default value shown
-        text='',
-        # available values
-        values=('T1', 'T2', 'T3'),
-        # just for positioning in our example
-        size_hint=(0.3, 0.2),
-        pos_hint={'x': .35, 'y':.75})
-        spinner.bind(text=self.show_selected_value)
+	for button in buttons:
 
-        box.add_widget(spinner)
-        g = GridLayout(cols=2, row_force_default=True, row_default_height=40)
-        g.padding = 5
-        g.spacing = 50
-        submit = Button(text='Submit',font_size=20,size_hint_x=None, width=200)
-        submit.background_color = 0, 1, 0, 1
-        submit.bind(on_release= lambda x: self.runTest())
-        submit.bind(on_release= lambda x: popup.dismiss())
-        submit.bind(on_release = self.pop)
-        submit.bind(on_release = self.puopen)
-        g.add_widget(submit)
-        reset = Button(text='Reset',font_size=20,size_hint_x=None, width=200)
-        g.add_widget(reset)
+		command = lambda x=button: select(x)
 
-        box.add_widget(g)
+		if button == "SPACE" or button == "SHIFT" or button == "BACK":
+			tk.Button(kb,text= button,width=6, bg="#3c4987", fg="#ffffff",
+				activebackground = "#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
+				pady=1, bd=1,command=command).grid(row=varRow,column=varColumn)
 
+		else:
+			tk.Button(kb,text= button,width=4, bg="#3c4987", fg="#ffffff",
+				activebackground = "#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
+				pady=1, bd=1,command=command).grid(row=varRow,column=varColumn)
 
-        popup.add_widget(box)
+		varColumn +=1
 
+		if varColumn > 14 and varRow == 2:
+			varColumn = 0
+			varRow+=1
+		if varColumn > 14 and varRow == 3:
+			varColumn = 0
+			varRow+=1
+		if varColumn > 14 and varRow == 4:
+			varColumn = 0
+			varRow+=1
 
-        self.start = Button(text='Start Test',font_size=20)
-        self.start.bind(on_release= lambda x: popup.open())
-        self.inside.add_widget(self.start)
+        #kb.mainloop()
 
-        self.add_widget(self.inside)
+def handle_click(event):
+    openKeyboard()
 
 
-        self.progress_label = Label(text="Progression: ",font_size=20)
-
-        self.add_widget(self.progress_label)
-
-        self.progress_bar = ProgressBar()
-        self.progress_bar.padding = 10
-        self.progress_bar.spacing = 5
-        self.add_widget(self.progress_bar)
-
-
-    def on_enter(instance, value):
-        print('Cable Serial #', value.text)
-
-    def show_selected_value(spinner, text,instance):
-        print('The Cable type selected is ', text.text)
+window = tk.Tk()
+window.title("GUI")
+window.geometry("300x200")
+# creating 2 text labels and input labels
+tk.Label(window, text = "Cable #").grid(row = 0) # this is placed in 0 0
+# 'Entry' is used to display the input-field
+SerialNumber = tk.StringVar()
+global snobj
+snobj = tk.Entry(window,width=10,textvariable=SerialNumber)
+snobj.grid(row = 0, column = 1)
+snobj.bind("<Button-1>",handle_click)
+ # this is placed in 0 1
 
 
-    # the function which works when you clicj = k the button
-    def pop(self, instance):
-        self.progress_bar.value = 1
+tk.Label(window, text = "Select Cable Type").grid(row = 1, column = 0)# this is placed in 1 0
+data=("T1", "T2", "T3", "T4")
+Type = tk.StringVar()
+Types = ttk.Combobox(window,values=data,width=5,textvariable=Type).grid(row = 1, column = 1) # this is placed in 1 1
+# 'Checkbutton' is used to create the check buttons
+#tk.Checkbutton(window, text = "Keep Me Logged In").grid(columnspan = 2)
+ # 'columnspan' tells to take the width of 2 columns
+# you can also use 'rowspan' in the similar manner
+def runTest():
+   if tkMessageBox.askyesno("Confirm", "Are you sure you would like to test Cable #"):
+       #os.system('python AutomationScript.py')
+       SN = SerialNumber.get()
+       CT = Type.get()
+       errmsg = ""
+       if SN == "":
+           errmsg+= "Please enter a cable number\n"
+       if CT == "":
+           errmsg+="Please select a valid cable Type\n"
+       if errmsg != "":
+           tkMessageBox.showerror("Incomplete fields",errmsg)
+
+#bind("<Button-1>", lambda e: openKeyboard())
+# def callback():
+#     name= tkFileDialog.askopenfilename()
+#     print(name)
 
 
-    # To continuesly increasing the value of pb.
-    def next(self, dt):
+# tk.Button(window, text='File Open',
+#        command=callback).grid(columnspan = 2)
 
-        self.progress_label.text = "Testing in progress :" + str(self.progress_bar.value)
-        if self.progress_bar.value>= 100:
-            self.progress_label.text = "Testing complete :" + str(self.progress_bar.value)
-            return False
-        self.progress_bar.value += 1
+B1 = tk.Button(window, text = "Start", command = runTest).grid(columnspan = 2)
+#tk.Button(window, text = "Open Keyboard", command = openKeyboard()).grid(columnspan = 2)
 
-    def puopen(self, instance):
-        Clock.schedule_interval(self.next, 4/5)
-
-    #def toggleSubmitButton(self):
-
-
-
-    def runTest(self):
-        print("HELLO")
-
-        #os.system('python AutomationScript.py')
-
-
-    def createDropDownMenu(self):
-        # create a dropdown with 10 buttons
-        dropdown = DropDown()
-        # When adding widgets, we need to specify the height manually
-        # (disabling the size_hint_y) so the dropdown can calculate
-        # the area it needs.
-        btn = Button(text='Type 1', size_hint_y=None, height=44)
-
-        # for each button, attach a callback that will call the select() method
-        # on the dropdown. We'll pass the text of the button as the data of the
-        # selection.
-        btn.bind(on_release=lambda btn: dropdown.select(btn.text))
-
-        # then add the button inside the dropdown
-        dropdown.add_widget(btn)
-
-        btn = Button(text='Type 2', size_hint_y=None, height=44)
-
-        btn.bind(on_release=lambda btn: dropdown.select(btn.text))
-
-        dropdown.add_widget(btn)
-
-
-        btn = Button(text='Type 3', size_hint_y=None, height=44)
-
-        btn.bind(on_release=lambda btn: dropdown.select(btn.text))
-
-        dropdown.add_widget(btn)
-
-        mainbutton = Button(text='',font_size=20)
-
-
-        mainbutton.bind(on_release=dropdown.open)
-
-
-        dropdown.bind(on_select=lambda instance, x: setattr(mainbutton, 'text', x))
-
-        return mainbutton
-
-
-class MyApp(App):
-    def build(self):
-        return MyGrid()
-
-
-if __name__ == "__main__":
-    Config.set('kivy', 'keyboard_mode', 'system')
-    MyApp().run()
+window.mainloop()
