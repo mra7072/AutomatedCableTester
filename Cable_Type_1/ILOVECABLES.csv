@@ -1,0 +1,5 @@
+Configuration,Measured-Resistance,Expected Resistance,Pass/Fail
+J1-1-J7-J3-1-J6,3.70313823,N/A,PASS
+J1-1-J7-J3-2-J6,9.9e+37,N/A,PASS
+J1-1-J7-J3-3-J6,9.9e+37,N/A,PASS
+J1-1-J7-J3-4-J6,9.9e+37,N/A,PASS
