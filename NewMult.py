@@ -283,7 +283,7 @@ if __name__ == '__main__':
                 J7_LIST = [x for x in file if x['Tag'] == "J7"]
                 J6_LIST = [x for x in file if x['Tag'] == "J6"]
                 Connections = [x for x in file if x['Tag'] == "Connection"][0]
-                SerialNumber = "fucku"
+                SerialNumber = "ILOVECABLES"
                 CableType = "T1"
                 makeTypeDirectories()
                 fw = createNewCSV(SerialNumber,CableType)
