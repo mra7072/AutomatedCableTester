@@ -225,13 +225,14 @@ def setup():
         #set read/write terminators to dictate end of command"
         DMM.read_termination = '\n'
         DMM.write_termination = '\n'
-        DMM.write("*rst; status:preset; *cls")
+        #DMM.write("*rst; status:preset; *cls")
         #Enable remote mode to interface with multimeter
         sleep(1)
         DMM.write("*IDN?")
 
         sleep(1)
         print("Connection Established with " + DMM.read())
+        DMM.write("*rst; status:preset; *cls")
         return DMM
     
 
@@ -247,7 +248,7 @@ def measureResistance(DMM):
     res = DMM.read()
     print("Measured resistance:" + str(res) + " ohms")
     #clear buffer
-    DMM.write("*rst; status:preset; *cls")
+    #DMM.write("*rst; status:preset; *cls")
     return res
 
 def makeTypeDirectories():
@@ -283,6 +284,8 @@ if __name__ == '__main__':
                 # DeterminePassFail
                 #output to csv(create new csv upon recieving a new cable, otherwise update)
                 DMM = setup()
+                DMM.write("DISP OFF")
+                
                 file = get_JSON_file('J69278.json')
                 CableState = True
                 J7_LIST = [x for x in file if x['Tag'] == "J7"]
@@ -308,6 +311,7 @@ if __name__ == '__main__':
                             GPIO_SETUP(MERGED_GPIO_LOW,MERGED_GPIO_HIGH)
                             I2C_GPIO(J6_I2C,J7_I2C)
                             name = J7['Name'] + "-" + J6['Name']
+                            #DMM.write("DISP OFF")
                             res = float(runAutomatedTest(DMM))
                             state = True
                             if name in Connections['Name']:
