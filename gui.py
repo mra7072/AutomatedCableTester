@@ -4,7 +4,7 @@ import ttk
 import tkMessageBox
 import tkFileDialog
 
-
+import os
 
 
 
@@ -20,54 +20,54 @@ buttons = [
 
 
 def select(value):
-	if value == "BACK":
-		# allText = entry.get()[:-1]
-		# entry.delete(0, tkinter,END)
-		# entry.insert(0,allText)
+    if value == "BACK":
+        # allText = entry.get()[:-1]
+        # entry.delete(0, tkinter,END)
+        # entry.insert(0,allText)
 
-		snobj.delete(len(snobj.get())-1,tk.END)
+        snobj.delete(len(snobj.get())-1,tk.END)
 
-	elif value == "SPACE":
-		snobj.insert(tk.END, ' ')
-	elif value == " Tab ":
-		snobj.insert(tk.END, '    ')
-	else :
-		snobj.insert(tk.END,value)
+    elif value == "SPACE":
+        snobj.insert(tk.END, ' ')
+    elif value == " Tab ":
+        snobj.insert(tk.END, '    ')
+    else :
+        snobj.insert(tk.END,value)
 
 
 
 def openKeyboard():
-        kb = tk.Tk("BITCH")
+    kb = tk.Tk()
 
-	varRow = 2
-	varColumn = 0
+    varRow = 2
+    varColumn = 0
 
 
-	for button in buttons:
+    for button in buttons:
 
-		command = lambda x=button: select(x)
+        command = lambda x=button: select(x)
 
-		if button == "SPACE" or button == "SHIFT" or button == "BACK":
-			tk.Button(kb,text= button,width=6, bg="#3c4987", fg="#ffffff",
-				activebackground = "#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
-				pady=1, bd=1,command=command).grid(row=varRow,column=varColumn)
+        if button == "SPACE" or button == "SHIFT" or button == "BACK":
+            tk.Button(kb,text= button,width=6, bg="#3c4987", fg="#ffffff",
+                activebackground = "#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
+                pady=1, bd=1,command=command).grid(row=varRow,column=varColumn)
 
-		else:
-			tk.Button(kb,text= button,width=4, bg="#3c4987", fg="#ffffff",
-				activebackground = "#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
-				pady=1, bd=1,command=command).grid(row=varRow,column=varColumn)
+        else:
+            tk.Button(kb,text= button,width=4, bg="#3c4987", fg="#ffffff",
+                activebackground = "#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
+                pady=1, bd=1,command=command).grid(row=varRow,column=varColumn)
 
-		varColumn +=1
+        varColumn +=1
 
-		if varColumn > 14 and varRow == 2:
-			varColumn = 0
-			varRow+=1
-		if varColumn > 14 and varRow == 3:
-			varColumn = 0
-			varRow+=1
-		if varColumn > 14 and varRow == 4:
-			varColumn = 0
-			varRow+=1
+        if varColumn > 14 and varRow == 2:
+            varColumn = 0
+            varRow+=1
+        if varColumn > 14 and varRow == 3:
+            varColumn = 0
+            varRow+=1
+        if varColumn > 14 and varRow == 4:
+            varColumn = 0
+            varRow+=1
 
         #kb.mainloop()
 
@@ -109,6 +109,10 @@ def runTest():
            errmsg+="Please select a valid cable Type\n"
        if errmsg != "":
            tkMessageBox.showerror("Incomplete fields",errmsg)
+        
+       os.system('python3 NewMult.py')
+           
+        
 
 #bind("<Button-1>", lambda e: openKeyboard())
 # def callback():

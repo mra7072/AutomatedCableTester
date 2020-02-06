@@ -10,6 +10,7 @@ import RPi.GPIO as GPIO
 import smbus
 from pyvisa.constants import StopBits, Parity
 import json
+import random
 
 
 """
@@ -58,7 +59,7 @@ def runAutomatedTest(DMM):
 Creates a new CSV file for the cable tested or update existing CSV and append new run
 """
 def createNewCSV(serial,cabletype):
-    # if(os.path.exists(serial + ".csv")):
+   
     #     #just append to newline
     #     append_write = 'a'
     # else:
@@ -67,11 +68,15 @@ def createNewCSV(serial,cabletype):
     path = ""   
     if cabletype == 'T1':
         path = os.path.join("./Cable_Type_1",serial + ".csv")
+        while(os.path.exists(path)):
+            path = os.path.join("./Cable_Type_1",serial + str(random.randrange(0,100)) + ".csv")
+           
     if cabletype == 'T2':
         path = os.path.join("./Cable_Type_2",serial + ".csv")
     if cabletype == 'T3':
         path = os.path.join("./Cable_Type_3",serial + ".csv")
-
+        
+    print(path)
     csvfile = open(path, "w")
     filewriter = csv.writer(csvfile, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -278,7 +283,7 @@ if __name__ == '__main__':
                 # DeterminePassFail
                 #output to csv(create new csv upon recieving a new cable, otherwise update)
                 DMM = setup()
-                file = get_JSON_file('test.json')
+                file = get_JSON_file('J69278.json')
                 CableState = True
                 J7_LIST = [x for x in file if x['Tag'] == "J7"]
                 J6_LIST = [x for x in file if x['Tag'] == "J6"]
