@@ -10,6 +10,7 @@ import thread
 import os
 import threading
 import PayloadTester as PT
+import kbd as kb
 
 from tkcalendar import Calendar, DateEntry
 
@@ -20,72 +21,38 @@ except ImportError:
     import Tkinter as tk
     import ttk
 
-kb = None
+
+
 progressBar = None
 status = None
-
-buttons = [
-    '~', '`', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', 'L',
-    'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '\\', '7', '8', '9', 'BACK',
-    'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', '[', ']', '4', '5', '6'
-    , 'SHIFT',
-    'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '?', '/', '1', '2', '3', 'SPACE',
-]
+keyboard = None
 
 
-def select(value):
-    if value == "BACK":
-        snobj.delete(len(snobj.get()) - 1, tk.END)
-    elif value == "SPACE":
-        snobj.insert(tk.END, ' ')
-    elif value == " Tab ":
-        snobj.insert(tk.END, '    ')
-    else:
-        snobj.insert(tk.END, value)
-
-
-def openKeyboard():
-    global kb
-    if kb is not None and kb.state() == "normal":
-        kb.focus()
-    else:
-        kb = tk.Tk()
-    varRow = 2
-    varColumn = 0
-    for button in buttons:
-        command = lambda x=button: select(x)
-        if button == "SPACE" or button == "SHIFT" or button == "BACK":
-            tk.Button(kb, text=button, width=6, bg="#3c4987", fg="#ffffff",
-                      activebackground="#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
-                      pady=1, bd=1, command=command).grid(row=varRow, column=varColumn)
-
-        else:
-            tk.Button(kb, text=button, width=4, bg="#3c4987", fg="#ffffff",
-                      activebackground="#ffffff", activeforeground="#3c4987", relief='raised', padx=1,
-                      pady=1, bd=1, command=command).grid(row=varRow, column=varColumn)
-
-        varColumn += 1
-
-        if varColumn > 14 and varRow == 2:
-            varColumn = 0
-            varRow += 1
-        if varColumn > 14 and varRow == 3:
-            varColumn = 0
-            varRow += 1
-        if varColumn > 14 and varRow == 4:
-            varColumn = 0
-            varRow += 1
-
+def _check_state(self, event):
+    '''finite state machine'''
+    if self.state == 'idle':
+        if event == 'focusin':
+            self._call_popup()
+            self.state = 'virtualkeyboard'
+    elif self.state == 'virtualkeyboard':
+        if event == 'focusin':
+            self._destroy_popup()
+            self.state = 'typing'
+        elif event == 'keypress':
+            self._destroy_popup()
+            self.state = 'typing'
+    elif self.state == 'typing':
+        if event == 'focusout':
+            self.state = 'idle'
 
 
 # TODO
 def Export():
     return
 
-
+#TODO
 def Calibrate():
     return
-
 
 
 def runTest():
@@ -114,34 +81,40 @@ def runTest():
     if errmsg == "":
         # run test, grab status
         if tkMessageBox.askyesno("Confirm", "Are you sure you would like to test Cable:" + SN):
+            global progressBar
+            global status
+            root = tk.Tk()
+            #root.overrideredirect(1) make window borderless
+            root.title('Progress Bar')
+            progressBar = ttk.Progressbar(root, orient="horizontal", length=286, mode="indeterminate")
+            progressBar.grid(padx=10, pady=10, columnspan=2)
+            t = run_thread('prepare', PT.executeAutomatedTest, SN, CT, D, T + AM_PM)
+            t.start()
+            # wait till thread dies off
+            while t.isAlive():
+                root.update()
+            print("hello")
+            print(t.is_alive())
+            print(status)
+            root.destroy()
+            if(status == "fuck u"):
+                tkMessageBox.showinfo("STATUS","PASS")
+            else:
+                tkMessageBox.showinfo("STATUS","FAIL")
 
-             t = run_thread('prepare', PT.executeAutomatedTest, SN, CT, D, T + AM_PM)
-             t.start()
-
-                 #wait till thread dies off
-
-             # if status == True:
-             #    tkMessageBox.showinfo("Status", "TEST PASSED!")
-             # else:
-             #    tkMessageBox.showerror("Status", "TEST FAILED!")
 
 
 def run_thread(name, func, SN, CT, D, T):
-    return threading.Thread(target=run_function, args=(name,func,SN, CT, D, T))
+    return threading.Thread(target=run_function, args=(name, func, SN, CT, D, T))
 
 
-def run_function(name, func,SN, CT, D, T):
+def run_function(name, func, SN, CT, D, T):
     # Disable all buttons
     global status
-    root = tk.Tk()
-    root.title('Progress Bar')
     global progressBar
-    progressBar = ttk.Progressbar(root, orient="horizontal", length=286, mode="indeterminate")
-    progressBar.grid(padx=10, pady=10, columnspan=2)
-
-    progressBar.start(interval=10)
     print(name, 'started')
-    status = func(SN,CT,D,T)
+    progressBar.start()
+    status = func(SN, CT, D, T)
     progressBar.stop()
     print(name, 'stopped')
 
@@ -149,9 +122,18 @@ def run_function(name, func,SN, CT, D, T):
 
 
 def handle_click(event):
-    # if kb != None:
-    print(kb)
-    openKeyboard()
+    global keyboard
+    if keyboard == None or not tk.Toplevel.winfo_exists(keyboard):
+            keyboard = kb.create(group1,snobj)
+
+
+    print(keyboard)
+
+# def on_closing_keyboard():
+#     global keyboard
+#     keyboard = None
+
+
 
 
 def isTimeFormatted(input):
@@ -168,11 +150,12 @@ def sel():
     # Function responsible for the updation
     # of the progress bar value
 
-group1 = tk.Tk()
 
+group1 = tk.Tk()
 
 window = tk.LabelFrame(group1, text="Data Entry", padx=5, pady=5)
 window.grid(row=4, column=0, columnspan=3, padx=10, pady=10, sticky=tk.E + tk.W + tk.N + tk.S)
+
 
 
 group1.title("Sandia National Labs - Automatic Cable Tester")
@@ -182,7 +165,10 @@ SerialNumber = tk.StringVar()
 snobj = tk.Entry(window, width=20, textvariable=SerialNumber)
 snobj.grid(row=0, column=1, padx=10, pady=10)
 
+#snobj.bind('<Button-1>', handle_click)
 snobj.bind('<Button-1>', handle_click)
+
+
 
 tk.Label(window, text="Select Cable Type:").grid(row=1, column=0)
 data = (PT.CABLET1, PT.CABLET2, PT.CABLET3, PT.CABLET4)
@@ -198,7 +184,10 @@ cal.grid(row=2, column=1)
 tk.Label(window, text="Enter time:").grid(row=3, column=0)
 
 timeEntered = tk.StringVar()
-timeEntry = tk.Entry(window, width=20, textvariable=timeEntered).grid(row=3, column=1)
+timeEntry = tk.Entry(window, width=20, textvariable=timeEntered)
+timeEntry.grid(row=3, column=1)
+
+timeEntry.bind('<Button-1>', handle_click)
 
 var = tk.StringVar()
 var.set("am")
@@ -214,5 +203,13 @@ buttons_frame = tk.Frame(group1)
 buttons_frame.grid(row=5, column=0, sticky=tk.W + tk.E)
 B1 = tk.Button(buttons_frame, height=2, width=10, text="Start", command=runTest).grid(padx=10, pady=10,
                                                                                       columnspan=1)
+
+# calibrate = tk.LabelFrame(group1, text="Data Entry", padx=5, pady=5)
+# calibrate.grid(row=4, column=2, columnspan=3, padx=10, pady=10, sticky=tk.E + tk.W + tk.N + tk.S)
+
 # tk.Button(window, text = "Open Keyboard", command = openKeyboard()).grid(columnspan = 2)
+
+
+
+
 group1.mainloop()

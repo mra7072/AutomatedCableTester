@@ -12,17 +12,17 @@ from pyvisa.constants import StopBits, Parity
 import json
 import random
 
-"""
-Creates a resource manager and performs proper connection to multimeter device.
-Sets parameters
-"""
 
 DMM = None
-TEST_RESULTS_PATH = "TEST_RESULTS"
+TEST_RESULTS_PATH = "TEST_RESULTS/"
 CABLET1 = "J68852"
 CABLET2 = "J69068"
 CABLET3 = "J69278"
 CABLET4 = "J69749"
+
+
+def Export():
+    return
 
 
 def runAutomatedTest(DMM):
@@ -106,6 +106,10 @@ def DeterminePassFail():
 #
 
 
+"""
+Creates a resource manager and performs proper connection to multimeter device.
+Sets parameters
+"""
 def get_JSON_file(filename):
     with open(filename + ".json") as f:
         data = json.load(f)
@@ -158,17 +162,29 @@ def measureResistance(DMM):
     return res
 
 
+def measure4Resistance(DMM):
+    # DMM.write("SENS:ZERO:AUTO?")
+    print("Initated measurement command")
+    DMM.write("MEAS:FRES? 1 , .01")
+    # sleep(0.25)
+    res = DMM.read()
+    print("Measured resistance:" + str(res) + " ohms")
+    # clear buffer
+    # DMM.write("*rst; status:preset; *cls")
+    return res
+
+
 def InitializeDirectories():
     if not os.path.exists(TEST_RESULTS_PATH):
         os.makedirs(TEST_RESULTS_PATH)
-    if not os.path.exists(TEST_RESULTS_PATH + "/" + CABLET1):
-        os.makedirs(TEST_RESULTS_PATH + "/" + CABLET1)
-    if not os.path.exists(TEST_RESULTS_PATH + "/" + CABLET2):
-        os.makedirs(TEST_RESULTS_PATH + "/" + CABLET2)
-    if not os.path.exists(TEST_RESULTS_PATH + "/" + CABLET3):
-        os.makedirs(TEST_RESULTS_PATH + "/" + CABLET3)
-    if not os.path.exists(TEST_RESULTS_PATH + "/" + CABLET4):
-        os.makedirs(TEST_RESULTS_PATH + "/" + CABLET4)
+    if not os.path.exists(TEST_RESULTS_PATH + CABLET1):
+        os.makedirs(TEST_RESULTS_PATH + CABLET1)
+    if not os.path.exists(TEST_RESULTS_PATH + CABLET2):
+        os.makedirs(TEST_RESULTS_PATH + CABLET2)
+    if not os.path.exists(TEST_RESULTS_PATH + CABLET3):
+        os.makedirs(TEST_RESULTS_PATH + CABLET3)
+    if not os.path.exists(TEST_RESULTS_PATH + CABLET4):
+        os.makedirs(TEST_RESULTS_PATH + CABLET4)
 
 
 """
@@ -177,13 +193,7 @@ Creates a new CSV file for the cable tested or update existing CSV and append ne
 
 
 def createNewCSV(serial, cabletype):
-    #     #just append to newline
-    #     append_write = 'a'
-    # else:
-    #     append_write = 'w'
-    # create new file
     path = ""
-
     if cabletype == CABLET1:
         path = os.path.join(TEST_RESULTS_PATH + "/" + CABLET1, serial + ".csv")
     if cabletype == CABLET2:
@@ -192,7 +202,6 @@ def createNewCSV(serial, cabletype):
         path = os.path.join(TEST_RESULTS_PATH + "/" + CABLET3, serial + ".csv")
     if cabletype == CABLET4:
         path = os.path.join(TEST_RESULTS_PATH + "/" + CABLET4, serial + ".csv")
-
     print(path)
     csvfile = open(path, "w")
     filewriter = csv.writer(csvfile, delimiter=',',
@@ -202,7 +211,7 @@ def createNewCSV(serial, cabletype):
     return filewriter
 
 
-def ValidateConnection(res):
+def defaultValidateConnection(res):
     if res >= 5:
         # TODO for repeated test
         return False
@@ -210,17 +219,72 @@ def ValidateConnection(res):
         return True
 
 
-def ValidateOpen(res):
+def defaultValidateOpen(res):
     if res >= 10000:
         return True
     else:
         return False
 
 
-# TODO - load lookuptables into memory
+def ValidateConnection(res, expectedRes):
+    #take difference
+    diff = abs(expectedRes - res)
+    tol = 1
+    if diff >= tol:
+        # TODO for repeated test
+        return False
+    else:
+        return True
+
+
+def ValidateOpen(res, expectedRes):
+    diff = abs(expectedRes - res)
+    tol = 1
+    if res >= 10000:
+        return True
+    else:
+        return False
+
 def load_config(CableType):
     return get_JSON_file(CableType)
 
+
+def create_lut(CableType, dict):
+    # Serializing json
+    json_object = json.dumps(dict, indent=4)
+    # Writing to sample.json
+    with open(CableType + "_" + "Calibration.json", "w") as outfile:
+        outfile.write(json_object)
+
+
+def performCalibration(CableType):
+    lut = {}
+    file = load_config(CableType)
+    J7_LIST = [x for x in file if x['Tag'] == "J7"]
+    J6_LIST = [x for x in file if x['Tag'] == "J6"]
+    Connections = [x for x in file if x['Tag'] == "Connection"][0]
+    for J7 in J7_LIST:
+        J7_GPIO_LOW = J7['GPIO_LOW']
+        J7_GPIO_HIGH = J7['GPIO_HIGH']
+        J7_I2C = J7['I2C']
+        for J6 in J6_LIST:
+            J6_I2C = J6['I2C']
+            J6_GPIO_LOW = J6['GPIO_LOW']
+            J6_GPIO_HIGH = J6['GPIO_HIGH']
+            MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
+            MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+            # GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+            # I2C_GPIO(J6_I2C, J7_I2C)
+            name = J7['Name'] + "-" + J6['Name']
+            # res = float(runAutomatedTest(DMM))
+            res = random.randint(0, 100)
+            lut[name] = res
+    create_lut(CableType, lut)
+
+
+# load lookup table if exists and test as normal
+# otherwise create lookup table
+# else compare against default values
 
 def executeAutomatedTest(SerialNumber, CableType, Date, Time):
     print("Entered")
@@ -235,13 +299,20 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
     # if DMM == None:
     #     DMM = setup()
     # DMM.write("DISP OFF")
+
     file = load_config(CableType)
+    lut = load_config(CableType + "_" + "Calibration")
+    LUT_EXISTS = True
+    if lut is None:
+        print("No Lookup table exists: Please calibrate using a good cable - Switching to default validation")
+        LUT_EXISTS = False
+
     CableState = True
     J7_LIST = [x for x in file if x['Tag'] == "J7"]
     J6_LIST = [x for x in file if x['Tag'] == "J6"]
     Connections = [x for x in file if x['Tag'] == "Connection"][0]
     InitializeDirectories()
-    filename = SerialNumber + "_" + Date.replace("/","_") + "_" + Time.replace(":", "")
+    filename = SerialNumber + "_" + Date.replace("/", "_") + "_" + Time.replace(":", "")
     fw = createNewCSV(filename, CableType)
     start_time = time.time()
     for J7 in J7_LIST:
@@ -260,27 +331,35 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
             # res = float(runAutomatedTest(DMM))
             res = random.randint(0, 100)
             state = True
-            if name in Connections['Name']:
-                state = ValidateConnection(res)
+            if not LUT_EXISTS:
+                if name in Connections['Name']:
+                    state = defaultValidateConnection(res)
+                else:
+                    state = defaultValidateOpen(res)
             else:
-                state = ValidateOpen(res)
+                expectedRes = lut[name]
+                if name in Connections['Name']:
+                    state = ValidateConnection(res, expectedRes)
+                else:
+                    state = ValidateOpen(res, expectedRes)
 
             if CableState == True and state == False:
                 CableState = False
-
-            fw.writerow([name, res, "N/A", "PASS" if state == True else "FAIL"])  # break
+            # use default validation methods
+            fw.writerow([name, res, expectedRes, "PASS" if state == True else "FAIL"])  # break
             sleep(.25)
 
     end_time = time.time()
     Elapsed = end_time - start_time
-    print("bye")
     fw.writerow(["Cable Status", "PASS" if CableState == True else "FAIL"])
     fw.writerow(["Total Time Elapsed", Elapsed])
     fw.writerow(["Date Executed", Date])
     fw.writerow(["Time of Execution", Time])
-    return CableState
-
+    return "fuck u"
 
 if __name__ == '__main__':
     # executeAutomatedTest()
-    print("hello")
+    # print("hello")
+    #performCalibration(CABLET1)
+    executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
+    #executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
