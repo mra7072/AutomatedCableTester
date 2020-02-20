@@ -1,17 +1,15 @@
 import pyvisa
 import time
-import atexit
 from time import sleep, strftime, localtime
 from datetime import timedelta
 import csv
 import os
 import threading
-# import RPi.GPIO as GPIO
-# import smbus
+import RPi.GPIO as GPIO
+import smbus
 from pyvisa.constants import StopBits, Parity
 import json
 import random
-
 
 DMM = None
 TEST_RESULTS_PATH = "TEST_RESULTS/"
@@ -39,68 +37,65 @@ def DeterminePassFail():
     return
 
 
-# def GPIO_SETUP(list_low,list_high):
-#
-#    # GPIO.output(chan_list, GPIO.LOW) # all LOW
-#     GPIO.setmode(GPIO.BOARD) #selects by GPIO (e.g GPIO4)
-#
-#     GPIO.setup(list_low, GPIO.OUT)
-#
-#     GPIO.setup(list_high, GPIO.OUT)
-#
-#     #precedence
-#     GPIO.output(list_low,GPIO.LOW)
-#     GPIO.output(list_high,GPIO.HIGH)
-#
+def GPIO_SETUP(list_low, list_high):
+    # GPIO.output(chan_list, GPIO.LOW) # all LOW
+    GPIO.setmode(GPIO.BOARD)  # selects by GPIO (e.g GPIO4)
+
+    GPIO.setup(list_low, GPIO.OUT)
+
+    GPIO.setup(list_high, GPIO.OUT)
+
+    # precedence
+    GPIO.output(list_low, GPIO.LOW)
+    GPIO.output(list_high, GPIO.HIGH)
+
 
 #
-# def I2C_GPIO(J6_LIST, J7_LIST):
-#     bus = smbus.SMBus(1)
-#     DEVICE1 = 0x20 # Device address (A0-A2)
-#     DEVICE2 = 0x21
-#
-#     D1_GPA_VAL_J6 =   int(J6_LIST[0], 16)
-#
-#     D1_GPB_VAL_J6 =   int(J6_LIST[1], 16)
-#
-#
-#     D2_GPA_VAL_J6 =   int(J6_LIST[2], 16)
-#
-#
-#     D2_GPB_VAL_J6 =   int(J6_LIST[3], 16)
-#
-#
-#     D1_GPA_VAL_J7 =   int(J7_LIST[0], 16)
-#     D1_GPB_VAL_J7 =   int(J7_LIST[1], 16)
-#
-#     D2_GPA_VAL_J7 =   int(J7_LIST[2], 16)
-#
-#     D2_GPB_VAL_J7 =   int(J7_LIST[3], 16)
-#
-#
-#     # Pin direction register
-#     IODIRA = 0x00
-#     IODIRB = 0x01
-#
-#     OLATA  = 0x14 # GPA
-#     OLATB  = 0x15 # GPB
-#
-#    #setting to output mode
-#     bus.write_byte_data(DEVICE1,IODIRA,0x00)
-#     bus.write_byte_data(DEVICE1,IODIRB,0x00)
-#     bus.write_byte_data(DEVICE2,IODIRA,0x00)
-#     bus.write_byte_data(DEVICE2,IODIRB,0x00)
-#
-#     D1_GPA_VAL = D1_GPA_VAL_J6 | D1_GPA_VAL_J7
-#     D1_GPB_VAL = D1_GPB_VAL_J6 | D1_GPB_VAL_J7
-#     D2_GPA_VAL = D2_GPA_VAL_J6 | D2_GPA_VAL_J7
-#     D2_GPB_VAL = D2_GPB_VAL_J6 | D2_GPB_VAL_J7
-#
-#     bus.write_byte_data(DEVICE1,OLATA,D1_GPA_VAL)
-#     bus.write_byte_data(DEVICE1,OLATB,D1_GPB_VAL)
-#
-#     bus.write_byte_data(DEVICE2,OLATA,D2_GPA_VAL)
-#     bus.write_byte_data(DEVICE2,OLATB,D2_GPB_VAL)
+def I2C_GPIO(J6_LIST, J7_LIST):
+    bus = smbus.SMBus(1)
+    DEVICE1 = 0x20  # Device address (A0-A2)
+    DEVICE2 = 0x21
+
+    D1_GPA_VAL_J6 = int(J6_LIST[0], 16)
+
+    D1_GPB_VAL_J6 = int(J6_LIST[1], 16)
+
+    D2_GPA_VAL_J6 = int(J6_LIST[2], 16)
+
+    D2_GPB_VAL_J6 = int(J6_LIST[3], 16)
+
+    D1_GPA_VAL_J7 = int(J7_LIST[0], 16)
+    D1_GPB_VAL_J7 = int(J7_LIST[1], 16)
+
+    D2_GPA_VAL_J7 = int(J7_LIST[2], 16)
+
+    D2_GPB_VAL_J7 = int(J7_LIST[3], 16)
+
+    # Pin direction register
+    IODIRA = 0x00
+    IODIRB = 0x01
+
+    OLATA = 0x14  # GPA
+    OLATB = 0x15  # GPB
+
+    # setting to output mode
+    bus.write_byte_data(DEVICE1, IODIRA, 0x00)
+    bus.write_byte_data(DEVICE1, IODIRB, 0x00)
+    bus.write_byte_data(DEVICE2, IODIRA, 0x00)
+    bus.write_byte_data(DEVICE2, IODIRB, 0x00)
+
+    D1_GPA_VAL = D1_GPA_VAL_J6 | D1_GPA_VAL_J7
+    D1_GPB_VAL = D1_GPB_VAL_J6 | D1_GPB_VAL_J7
+    D2_GPA_VAL = D2_GPA_VAL_J6 | D2_GPA_VAL_J7
+    D2_GPB_VAL = D2_GPB_VAL_J6 | D2_GPB_VAL_J7
+
+    bus.write_byte_data(DEVICE1, OLATA, D1_GPA_VAL)
+    bus.write_byte_data(DEVICE1, OLATB, D1_GPB_VAL)
+
+    bus.write_byte_data(DEVICE2, OLATA, D2_GPA_VAL)
+    bus.write_byte_data(DEVICE2, OLATB, D2_GPB_VAL)
+
+
 #
 #
 #
@@ -110,6 +105,8 @@ def DeterminePassFail():
 Creates a resource manager and performs proper connection to multimeter device.
 Sets parameters
 """
+
+
 def get_JSON_file(filename):
     with open(filename + ".json") as f:
         data = json.load(f)
@@ -227,7 +224,7 @@ def defaultValidateOpen(res):
 
 
 def ValidateConnection(res, expectedRes):
-    #take difference
+    # take difference
     diff = abs(expectedRes - res)
     tol = 1
     if diff >= tol:
@@ -244,6 +241,7 @@ def ValidateOpen(res, expectedRes):
         return True
     else:
         return False
+
 
 def load_config(CableType):
     return get_JSON_file(CableType)
@@ -296,12 +294,14 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
     # DeterminePassFail
     # output to csv(create new csv upon recieving a new cable, otherwise update)
     global DMM
-    # if DMM == None:
-    #     DMM = setup()
-    # DMM.write("DISP OFF")
+    if DMM == None:
+        DMM = setup()
+
+    DMM.write("DISP OFF")
 
     file = load_config(CableType)
     lut = load_config(CableType + "_" + "Calibration")
+
     LUT_EXISTS = True
     if lut is None:
         print("No Lookup table exists: Please calibrate using a good cable - Switching to default validation")
@@ -325,12 +325,13 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
             J6_GPIO_HIGH = J6['GPIO_HIGH']
             MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
             MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
-            #  GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
-            # I2C_GPIO(J6_I2C, J7_I2C)
+            GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+            I2C_GPIO(J6_I2C, J7_I2C)
             name = J7['Name'] + "-" + J6['Name']
-            # res = float(runAutomatedTest(DMM))
-            res = random.randint(0, 100)
+            res = float(runAutomatedTest(DMM))
+            # res = random.randint(0, 100)
             state = True
+            expectedRes = "N/A"
             if not LUT_EXISTS:
                 if name in Connections['Name']:
                     state = defaultValidateConnection(res)
@@ -355,11 +356,12 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
     fw.writerow(["Total Time Elapsed", Elapsed])
     fw.writerow(["Date Executed", Date])
     fw.writerow(["Time of Execution", Time])
-    return "fuck u"
+    return CableState
+
 
 if __name__ == '__main__':
     # executeAutomatedTest()
     # print("hello")
-    #performCalibration(CABLET1)
+    # performCalibration(CABLET1)
     executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
-    #executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
+    # executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
