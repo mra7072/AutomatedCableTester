@@ -150,7 +150,7 @@ Issues a measurement command, performs measurement, and returns measurement valu
 def measureResistance(DMM):
     # DMM.write("SENS:ZERO:AUTO?")
     print("Initated measurement command")
-    DMM.write("MEAS:RES? 1 , .01")
+    DMM.write("MEAS:FRES? 1 , .01")
     # sleep(0.25)
     res = DMM.read()
     print("Measured resistance:" + str(res) + " ohms")
@@ -203,7 +203,7 @@ def createNewCSV(serial, cabletype):
     csvfile = open(path, "w")
     filewriter = csv.writer(csvfile, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    filewriter.writerow(['Configuration', 'Measured-Resistance', 'Expected Resistance', 'Pass/Fail'])
+    filewriter.writerow(['Configuration', 'Measured-Resistance', 'Expected Resistance', 'Pass/Fail','Expected Real Resistance'])
 
     return filewriter
 
@@ -222,11 +222,15 @@ def defaultValidateOpen(res):
     else:
         return False
 
+def getExpectedRealRes(res, expectedRes):
+    # take difference
+    diff = 0.1 - abs(res - expectedRes)
+    return diff
 
 def ValidateConnection(res, expectedRes):
     # take difference
     diff = abs(expectedRes - res)
-    tol = 1
+    tol = 0.1
     if diff >= tol:
         # TODO for repeated test
         return False
@@ -236,11 +240,11 @@ def ValidateConnection(res, expectedRes):
 
 def ValidateOpen(res, expectedRes):
     diff = abs(expectedRes - res)
-    tol = 1
-    if res >= 10000:
-        return True
-    else:
+    tol = 1000
+    if diff >= tol:
         return False
+    else:
+        return True
 
 
 def load_config(CableType):
@@ -256,6 +260,10 @@ def create_lut(CableType, dict):
 
 
 def performCalibration(CableType):
+    global DMM
+    if DMM == None:
+        DMM = setup()
+    DMM.write("DISP OFF")
     lut = {}
     file = load_config(CableType)
     J7_LIST = [x for x in file if x['Tag'] == "J7"]
@@ -271,11 +279,11 @@ def performCalibration(CableType):
             J6_GPIO_HIGH = J6['GPIO_HIGH']
             MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
             MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
-            # GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
-            # I2C_GPIO(J6_I2C, J7_I2C)
+            GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+            I2C_GPIO(J6_I2C, J7_I2C)
             name = J7['Name'] + "-" + J6['Name']
-            # res = float(runAutomatedTest(DMM))
-            res = random.randint(0, 100)
+            res = float(runAutomatedTest(DMM))
+            #res = random.randint(0, 100)
             lut[name] = res
     create_lut(CableType, lut)
 
@@ -301,11 +309,13 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
 
     file = load_config(CableType)
     lut = load_config(CableType + "_" + "Calibration")
-
     LUT_EXISTS = True
-    if lut is None:
-        print("No Lookup table exists: Please calibrate using a good cable - Switching to default validation")
-        LUT_EXISTS = False
+    if not os.path.exists(CableType + "_" + "Calibration"):
+         print("No Lookup table exists: Please calibrate using a good cable - Switching to default validation")
+        # LUT_EXISTS = False
+  
+       
+       
 
     CableState = True
     J7_LIST = [x for x in file if x['Tag'] == "J7"]
@@ -332,6 +342,7 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
             # res = random.randint(0, 100)
             state = True
             expectedRes = "N/A"
+            expectedRealRes = "N/A"
             if not LUT_EXISTS:
                 if name in Connections['Name']:
                     state = defaultValidateConnection(res)
@@ -341,13 +352,17 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
                 expectedRes = lut[name]
                 if name in Connections['Name']:
                     state = ValidateConnection(res, expectedRes)
+                    expectedRealRes = getExpectedRealRes(res,expectedRes)
+                    #print(expectedRealRes + "HELLO")
                 else:
                     state = ValidateOpen(res, expectedRes)
+                    expectedRealRes = res
+                    #print(expectedRealRes + "HELLO")
 
             if CableState == True and state == False:
                 CableState = False
             # use default validation methods
-            fw.writerow([name, res, expectedRes, "PASS" if state == True else "FAIL"])  # break
+            fw.writerow([name, res, expectedRes, "PASS" if state == True else "FAIL", expectedRealRes])  # break
             sleep(.25)
 
     end_time = time.time()
@@ -362,6 +377,6 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
 if __name__ == '__main__':
     # executeAutomatedTest()
     # print("hello")
-    # performCalibration(CABLET1)
-    executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
+    #performCalibration(CABLET1)
+    executeAutomatedTest("Ser8", CABLET1, "1/12/2020", "8:00am")
     # executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")

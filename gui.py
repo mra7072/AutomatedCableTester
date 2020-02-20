@@ -1,25 +1,21 @@
-import Tkinter as tk
+import tkinter as tk
 # from Tkinkter.Tkk import Combobox
-import ttk
-import tkMessageBox
-import tkFileDialog
+#from tkinter import ttk
+from tkinter import filedialog
+from tkinter import messagebox as tkMessageBox
 import sys
 # import ttkcalendar
 import time
-import thread
+#import thread
 import os
 import threading
 import PayloadTester as PT
 import kbd as kb
+from tkinter import ttk
 
 from tkcalendar import Calendar, DateEntry
 
-try:
-    import tkinter as tk
-    from tkinter import ttk
-except ImportError:
-    import Tkinter as tk
-    import ttk
+
 
 
 
@@ -80,28 +76,13 @@ def runTest():
 
     if errmsg == "":
         # run test, grab status
-        if tkMessageBox.askyesno("Confirm", "Are you sure you would like to test Cable:" + SN):
-            global progressBar
-            global status
-            root = tk.Tk()
-            #root.overrideredirect(1) make window borderless
-            root.title('Progress Bar')
-            progressBar = ttk.Progressbar(root, orient="horizontal", length=286, mode="indeterminate")
-            progressBar.grid(padx=10, pady=10, columnspan=2)
-            t = run_thread('prepare', PT.executeAutomatedTest, SN, CT, D, T + AM_PM)
-            t.start()
-            # wait till thread dies off
-            while t.isAlive():
-                root.update()
-            print("hello")
-            print(t.is_alive())
-            print(status)
-            root.destroy()
-            if(status == "fuck u"):
+        yesNo =  tkMessageBox.askyesno("Confirm", "Are you sure you would like to test Cable:" + SN)
+        if yesNo:
+            status = PT.executeAutomatedTest(SN, CT, D, T + AM_PM)
+            if(status == True):
                 tkMessageBox.showinfo("STATUS","PASS")
             else:
-                tkMessageBox.showinfo("STATUS","FAIL")
-
+                tkMessageBox.showinfo("STATUS","FUCK U")
 
 
 def run_thread(name, func, SN, CT, D, T):
