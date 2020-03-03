@@ -10,6 +10,9 @@ import smbus
 from pyvisa.constants import StopBits, Parity
 import json
 import random
+import shutil
+from glob import glob
+from subprocess import check_output, CalledProcessError
 
 DMM = None
 TEST_RESULTS_PATH = "TEST_RESULTS/"
@@ -17,7 +20,8 @@ CABLET1 = "J68852"
 CABLET2 = "J69068"
 CABLET3 = "J69278"
 CABLET4 = "J69749"
-
+calibrationState = True
+CableState = True
 
 def Export():
     return
@@ -25,6 +29,10 @@ def Export():
 
 def runAutomatedTest(DMM):
     return measureResistance(DMM)
+
+def run4AutomatedTest(DMM):
+    return measure4Resistance(DMM)
+
 
 
 # TODO - Add validation checks against lookuptables
@@ -150,8 +158,8 @@ Issues a measurement command, performs measurement, and returns measurement valu
 def measureResistance(DMM):
     # DMM.write("SENS:ZERO:AUTO?")
     print("Initated measurement command")
-    DMM.write("MEAS:FRES? 1 , .01")
-    # sleep(0.25)
+    DMM.write("MEAS:FRES? 100 , .00001")
+    sleep(0.25)
     res = DMM.read()
     print("Measured resistance:" + str(res) + " ohms")
     # clear buffer
@@ -162,8 +170,8 @@ def measureResistance(DMM):
 def measure4Resistance(DMM):
     # DMM.write("SENS:ZERO:AUTO?")
     print("Initated measurement command")
-    DMM.write("MEAS:FRES? 1 , .01")
-    # sleep(0.25)
+    DMM.write("MEAS:FRES?  100 , .00001")
+    sleep(0.25)
     res = DMM.read()
     print("Measured resistance:" + str(res) + " ohms")
     # clear buffer
@@ -224,7 +232,7 @@ def defaultValidateOpen(res):
 
 def getExpectedRealRes(res, expectedRes):
     # take difference
-    diff = 0.1 - abs(res - expectedRes)
+    diff = abs(0.1 - abs(res - expectedRes))
     return diff
 
 def ValidateConnection(res, expectedRes):
@@ -261,9 +269,12 @@ def create_lut(CableType, dict):
 
 def performCalibration(CableType):
     global DMM
+    global calibrationState
     if DMM == None:
         DMM = setup()
-    DMM.write("DISP OFF")
+    
+    calibrationState = False
+#     DMM.write("DISP OFF")
     lut = {}
     file = load_config(CableType)
     J7_LIST = [x for x in file if x['Tag'] == "J7"]
@@ -282,10 +293,14 @@ def performCalibration(CableType):
             GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
             I2C_GPIO(J6_I2C, J7_I2C)
             name = J7['Name'] + "-" + J6['Name']
-            res = float(runAutomatedTest(DMM))
-            #res = random.randint(0, 100)
+            sleep(.05)
+            res = float(run4AutomatedTest(DMM))
+#             #res = random.randint(0, 100)
             lut[name] = res
+            #(.25)
     create_lut(CableType, lut)
+    calibrationState = True
+    
 
 
 # load lookup table if exists and test as normal
@@ -302,81 +317,130 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
     # DeterminePassFail
     # output to csv(create new csv upon recieving a new cable, otherwise update)
     global DMM
+    global CableState
+    global calibrationState
+    CableState = True
     if DMM == None:
         DMM = setup()
 
-    DMM.write("DISP OFF")
+    #DMM.write("DISP OFF")
 
     file = load_config(CableType)
-    lut = load_config(CableType + "_" + "Calibration")
-    LUT_EXISTS = True
-    if not os.path.exists(CableType + "_" + "Calibration"):
-         print("No Lookup table exists: Please calibrate using a good cable - Switching to default validation")
-        # LUT_EXISTS = False
-  
-       
-       
-
-    CableState = True
-    J7_LIST = [x for x in file if x['Tag'] == "J7"]
-    J6_LIST = [x for x in file if x['Tag'] == "J6"]
-    Connections = [x for x in file if x['Tag'] == "Connection"][0]
-    InitializeDirectories()
-    filename = SerialNumber + "_" + Date.replace("/", "_") + "_" + Time.replace(":", "")
-    fw = createNewCSV(filename, CableType)
-    start_time = time.time()
-    for J7 in J7_LIST:
-        J7_GPIO_LOW = J7['GPIO_LOW']
-        J7_GPIO_HIGH = J7['GPIO_HIGH']
-        J7_I2C = J7['I2C']
-        for J6 in J6_LIST:
-            J6_I2C = J6['I2C']
-            J6_GPIO_LOW = J6['GPIO_LOW']
-            J6_GPIO_HIGH = J6['GPIO_HIGH']
-            MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
-            MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
-            GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
-            I2C_GPIO(J6_I2C, J7_I2C)
-            name = J7['Name'] + "-" + J6['Name']
-            res = float(runAutomatedTest(DMM))
-            # res = random.randint(0, 100)
-            state = True
-            expectedRes = "N/A"
-            expectedRealRes = "N/A"
-            if not LUT_EXISTS:
-                if name in Connections['Name']:
-                    state = defaultValidateConnection(res)
+    lut = None
+    if os.path.exists(CableType + "_" + "Calibration"+ ".json"):
+        lut = load_config(CableType + "_" + "Calibration")
+    
+        LUT_EXISTS = True
+        CableState = True
+        J7_LIST = [x for x in file if x['Tag'] == "J7"]
+        J6_LIST = [x for x in file if x['Tag'] == "J6"]
+        Connections = [x for x in file if x['Tag'] == "Connection"][0]
+        InitializeDirectories()
+        filename = SerialNumber + "_" + Date.replace("/", "_") + "_" + Time.replace(":", "")
+        fw = createNewCSV(filename, CableType)
+        start_time = time.time()
+        for J7 in J7_LIST:
+            J7_GPIO_LOW = J7['GPIO_LOW']
+            J7_GPIO_HIGH = J7['GPIO_HIGH']
+            J7_I2C = J7['I2C']
+            for J6 in J6_LIST:
+                J6_I2C = J6['I2C']
+                J6_GPIO_LOW = J6['GPIO_LOW']
+                J6_GPIO_HIGH = J6['GPIO_HIGH']
+                MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
+                MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+                GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+                I2C_GPIO(J6_I2C, J7_I2C)
+                name = J7['Name'] + "-" + J6['Name']
+                res = float(runAutomatedTest(DMM))
+#                 # res = random.randint(0, 100)
+                state = True
+                expectedRes = "N/A"
+                expectedRealRes = "N/A"
+                if not LUT_EXISTS:
+                    if name in Connections['Name']:
+                        state = defaultValidateConnection(res)
+                    else:
+                         state = defaultValidateOpen(res)
                 else:
-                    state = defaultValidateOpen(res)
-            else:
-                expectedRes = lut[name]
-                if name in Connections['Name']:
-                    state = ValidateConnection(res, expectedRes)
-                    expectedRealRes = getExpectedRealRes(res,expectedRes)
-                    #print(expectedRealRes + "HELLO")
-                else:
-                    state = ValidateOpen(res, expectedRes)
-                    expectedRealRes = res
-                    #print(expectedRealRes + "HELLO")
+                    expectedRes = lut[name]
+                    if name in Connections['Name']:
+                        state = ValidateConnection(res, expectedRes)
+                        expectedRealRes = getExpectedRealRes(res,expectedRes)
+                        #print(expectedRealRes + "HELLO")
+                    else:
+                        state = ValidateOpen(res, expectedRes)
+                        expectedRealRes = res
+#                         #print(expectedRealRes + "HELLO")
+# 
+                if CableState == True and state == False:
+                    CableState = False
+                # use default validation methods
+                fw.writerow([name, res, expectedRes, "PASS" if state == True else "FAIL", expectedRealRes])  # break
+               # sleep(.25)
+# # 
+        end_time = time.time()
+        Elapsed = end_time - start_time
+        fw.writerow(["Cable Status", "PASS" if CableState == True else "FAIL"])
+        fw.writerow(["Total Time Elapsed", Elapsed])
+        fw.writerow(["Date Executed", Date])
+        fw.writerow(["Time of Execution", Time])
+        #return CableState
+    else:
+        print("Calibration does not exist for cable")
+#
+    #return True
 
-            if CableState == True and state == False:
-                CableState = False
-            # use default validation methods
-            fw.writerow([name, res, expectedRes, "PASS" if state == True else "FAIL", expectedRealRes])  # break
-            sleep(.25)
 
-    end_time = time.time()
-    Elapsed = end_time - start_time
-    fw.writerow(["Cable Status", "PASS" if CableState == True else "FAIL"])
-    fw.writerow(["Total Time Elapsed", Elapsed])
-    fw.writerow(["Date Executed", Date])
-    fw.writerow(["Time of Execution", Time])
-    return CableState
-
-
+import errno
+from distutils.dir_util import copy_tree
+def copy(src, dest):
+    try:
+        shutil.copytree(src, dest)
+    except OSError as e:
+        # If the error was caused because the source wasn't a directory
+        if e.errno == errno.ENOTDIR:
+            shutil.copy(src, dest)
+        else:
+            print('Directory not copied. Error: %s' % e)
+def copytree2(source,dest):
+    os.mkdir(dest)
+    dest_dir = os.path.join(dest,os.path.basename(source))
+    shutil.copytree(source,dest_dir)
 if __name__ == '__main__':
+    #print(test1())
+    path = "/media/pi"
+    if(os.path.exists(path)):
+        files = os.listdir(path)
+        if(len(files) == 0):
+            print("No device connected")
+        else:
+            drive = files[0]
+            drivepath = path + "/" + drive
+            print(drivepath)
+            files = os.listdir(TEST_RESULTS_PATH)
+            print(files)
+            #copytree2(TEST_RESULTS_PATH,drivepath)
+#             if os.path.exists(drivepath + "/TEST_RESULTS"):
+#                    os.rmdir(drivepath + "/TEST_RESULTS")
+               
+            os.mkdir(drivepath + "/TEST_RESULTS")
+            copy_tree(TEST_RESULTS_PATH, drivepath + "/TEST_RESULTS")
+            
+
+#             try:
+#                 shutil.copytree(TEST_RESULTS_PATH, drivepath)
+#             # Directories are the same
+#             except shutil.Error as e:
+#                 print('Directory not copied. Error: %s' % e)
+#             # Any error saying that the directory doesn't exist
+#             except OSError as e:
+#                 print('Directory not copied. Error: %s' % e)
+# 
+        
     # executeAutomatedTest()
     # print("hello")
-    #performCalibration(CABLET1)
-    executeAutomatedTest("Ser8", CABLET1, "1/12/2020", "8:00am")
+    #performCalibration(CABLET3)
+    #executeAutomatedTest("Ser32", CABLET3, "2/28/2020", "1:29pm")
     # executeAutomatedTest("ya", CABLET1, "1/12/2020", "8:00am")
+

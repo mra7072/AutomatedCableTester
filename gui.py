@@ -22,34 +22,29 @@ from tkcalendar import Calendar, DateEntry
 progressBar = None
 status = None
 keyboard = None
+root = None
 
 
-def _check_state(self, event):
-    '''finite state machine'''
-    if self.state == 'idle':
-        if event == 'focusin':
-            self._call_popup()
-            self.state = 'virtualkeyboard'
-    elif self.state == 'virtualkeyboard':
-        if event == 'focusin':
-            self._destroy_popup()
-            self.state = 'typing'
-        elif event == 'keypress':
-            self._destroy_popup()
-            self.state = 'typing'
-    elif self.state == 'typing':
-        if event == 'focusout':
-            self.state = 'idle'
-
-
-# TODO
 def Export():
     return
 
 #TODO
-def Calibrate():
-    return
-
+def calibrateCable():
+    CT = Type.get()
+    yesNo =  tkMessageBox.askyesno("Confirm", "Are you sure you would like to calibrate cable type:" + CT + "." + "Existing calibration file will be overriden")
+    if yesNo:
+        t = threading.Thread(target=PT.performCalibration(CT))
+        t.start()
+        print("hey")
+        while t.is_alive():
+                pass
+        if PT.calibrationState:
+            tkMessageBox.showinfo("Information","Calibration successful")
+        else:
+            tkMessageBox.showerror("Calibration", "Error occured during calibration")
+                        
+        
+                 
 
 def runTest():
     SN = SerialNumber.get()
@@ -61,7 +56,6 @@ def runTest():
     print(CT)
     print(D)
     print(T)
-
     errmsg = ""
     if SN == "":
         errmsg += "Please enter a cable number\n"
@@ -78,26 +72,65 @@ def runTest():
         # run test, grab status
         yesNo =  tkMessageBox.askyesno("Confirm", "Are you sure you would like to test Cable:" + SN)
         if yesNo:
-            status = PT.executeAutomatedTest(SN, CT, D, T + AM_PM)
-            if(status == True):
+            global progressBar
+            global status
+            global root
+           
+                        #status = PT.testTest()
+            t = threading.Thread(target=PT.executeAutomatedTest(SN, CT, D, T + AM_PM))
+            #t = run_thread('prepare', PT.executeAutomatedTest, SN, CT, D, T + AM_PM)
+            t.start()
+            while t.is_alive():
+                pass
+         #
+            if PT.CableState:
                 tkMessageBox.showinfo("STATUS","PASS")
             else:
-                tkMessageBox.showinfo("STATUS","FUCK U")
+                tkMessageBox.showerror("STATUS","FAIL")
 
+            
+            #progressBar.stop()
+            #root.destroy()
+            
+                                 
+                                 
+                                 
+                            
+            #print(t.status())
+            #root.mainloop()
+    
+           # print(status + "hello")
+        
 
 def run_thread(name, func, SN, CT, D, T):
-    return threading.Thread(target=run_function, args=(name, func, SN, CT, D, T))
+     return threading.Thread(target=run_function, args=(name, func, SN, CT, D, T))
 
 
 def run_function(name, func, SN, CT, D, T):
     # Disable all buttons
     global status
     global progressBar
+    global root
+    global B1
+    global B2
+    progressBar = ttk.Progressbar(group1, orient="horizontal", length=286, mode="indeterminate")  
     print(name, 'started')
     progressBar.start()
+    buttons_frame.pack_forget()
+    testlabel = tk.Label(window, text="Testing in Progress...")
+    testlabel.pack()
+    progressBar.pack() 
+
     status = func(SN, CT, D, T)
     progressBar.stop()
+    progressBar.pack_forget()
+    buttons_frame.pack()
+    testlabel.pack_forget()
+#     v = StringVar()
+#     Label(master, textvariable=v).pack()
     print(name, 'stopped')
+    print("hello")  
+    
 
 
 
@@ -109,12 +142,6 @@ def handle_click(event):
 
 
     print(keyboard)
-
-# def on_closing_keyboard():
-#     global keyboard
-#     keyboard = None
-
-
 
 
 def isTimeFormatted(input):
@@ -128,69 +155,74 @@ def isTimeFormatted(input):
 def sel():
     selection = "You selected the option " + str(var.get())
 
-    # Function responsible for the updation
-    # of the progress bar value
-
-
 group1 = tk.Tk()
 
-window = tk.LabelFrame(group1, text="Data Entry", padx=5, pady=5)
-window.grid(row=4, column=0, columnspan=3, padx=10, pady=10, sticky=tk.E + tk.W + tk.N + tk.S)
+window = tk.LabelFrame(group1, text="Data Entry", padx=20, pady=20)
+#window.grid(row=4, column=0, columnspan=3, padx=20, pady=20, sticky=tk.E + tk.W + tk.N + tk.S)
 
+window.pack(fill="x", expand="yes")
+
+tk.Label(window, text="Select Date: ",font=('Verdana',10)).pack()
+cal = DateEntry(window, width=20, background='darkblue',
+                foreground='white', borderwidth=2,font=('Verdana',20))
+cal.pack()
+
+tk.Label(window, text="Select Cable Type:",font=('Verdana',10)).pack()
+data = (PT.CABLET1, PT.CABLET2, PT.CABLET3, PT.CABLET4)
+Type = tk.StringVar()
+Types = ttk.Combobox(window, values=data, width=20, textvariable=Type,font=('Verdana',20)).pack()
 
 
 group1.title("Sandia National Labs - Automatic Cable Tester")
-tk.Label(window, text="Enter Serial #: ").grid(row=0)
+yo = tk.Label(window, text="Enter Serial #: ",anchor="w",font=('Verdana',10))
+yo.pack()
+#yo.pack()
+
 
 SerialNumber = tk.StringVar()
-snobj = tk.Entry(window, width=20, textvariable=SerialNumber)
-snobj.grid(row=0, column=1, padx=10, pady=10)
+snobj = tk.Entry(window, width=20, textvariable=SerialNumber,font=('Verdana',20))
+
+snobj.pack()
+#snobj.grid(row=0, column=1, padx=10, pady=10)
 
 #snobj.bind('<Button-1>', handle_click)
 snobj.bind('<Button-1>', handle_click)
 
 
 
-tk.Label(window, text="Select Cable Type:").grid(row=1, column=0)
-data = (PT.CABLET1, PT.CABLET2, PT.CABLET3, PT.CABLET4)
-Type = tk.StringVar()
-Types = ttk.Combobox(window, values=data, width=20, textvariable=Type).grid(row=1, column=1, padx=10, pady=10)
 
-tk.Label(window, text="Select Date: ").grid(row=2, column=0, padx=10, pady=10)
-
-cal = DateEntry(window, width=20, background='darkblue',
-                foreground='white', borderwidth=2)
-cal.grid(row=2, column=1)
-
-tk.Label(window, text="Enter time:").grid(row=3, column=0)
+tk.Label(window, text="Enter time:").pack()
 
 timeEntered = tk.StringVar()
-timeEntry = tk.Entry(window, width=20, textvariable=timeEntered)
-timeEntry.grid(row=3, column=1)
+timeEntry = tk.Entry(window, width=20, textvariable=timeEntered,font=('Verdana',20))
+timeEntry.pack()
 
 timeEntry.bind('<Button-1>', handle_click)
 
 var = tk.StringVar()
 var.set("am")
 R1 = tk.Radiobutton(window, text="am", variable=var, value="am",
-                    command=sel).grid(row=3, column=2)
+                    command=sel).pack()
 
 R2 = tk.Radiobutton(window, text="pm", variable=var, value="pm",
-                    command=sel).grid(row=3, column=3)
+                    command=sel,anchor="w").pack()
+
 
 # # calendarBttn = tk.Button(window, text = "Select date", command = example3).grid(columnspan = 2)
 #
 buttons_frame = tk.Frame(group1)
-buttons_frame.grid(row=5, column=0, sticky=tk.W + tk.E)
-B1 = tk.Button(buttons_frame, height=2, width=10, text="Start", command=runTest).grid(padx=10, pady=10,
-                                                                                      columnspan=1)
+buttons_frame.pack()
+B1 = tk.Button(buttons_frame, height=2, width=10, text="Start", command=runTest)
+B1.grid(row=0, column=0)
 
-# calibrate = tk.LabelFrame(group1, text="Data Entry", padx=5, pady=5)
-# calibrate.grid(row=4, column=2, columnspan=3, padx=10, pady=10, sticky=tk.E + tk.W + tk.N + tk.S)
+#calibrate = tk.LabelFrame(group1, text="Data Entry", padx=5, pady=5)
 
 # tk.Button(window, text = "Open Keyboard", command = openKeyboard()).grid(columnspan = 2)
-
+B2 = tk.Button(buttons_frame, height=2, width=10, text="Calibrate", command=calibrateCable)
+B2.grid(padx=10, pady=10,row=0, column=1)
 
 
 
 group1.mainloop()
+
+
