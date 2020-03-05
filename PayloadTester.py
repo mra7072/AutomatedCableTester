@@ -13,6 +13,8 @@ import random
 import shutil
 from glob import glob
 from subprocess import check_output, CalledProcessError
+import errno
+from distutils.dir_util import copy_tree
 
 DMM = None
 TEST_RESULTS_PATH = "TEST_RESULTS/"
@@ -22,10 +24,6 @@ CABLET3 = "J69278"
 CABLET4 = "J69749"
 calibrationState = True
 CableState = True
-
-def Export():
-    return
-
 
 def runAutomatedTest(DMM):
     return measureResistance(DMM)
@@ -195,7 +193,11 @@ def InitializeDirectories():
 """
 Creates a new CSV file for the cable tested or update existing CSV and append new run
 """
-
+def testSpecialCable():
+    return
+    #determine left, if all valid connections are < 1000
+    #other is right
+    #validate normally, not against calibration 
 
 def createNewCSV(serial, cabletype):
     path = ""
@@ -232,8 +234,12 @@ def defaultValidateOpen(res):
 
 def getExpectedRealRes(res, expectedRes):
     # take difference
-    diff = abs(0.1 - abs(res - expectedRes))
-    return diff
+#     diff = 0
+#     if res < expectedRes:
+#         diff = abs(expected - res)
+#     else:  
+        diff = abs(0.1 - abs(res - expectedRes))
+        return diff
 
 def ValidateConnection(res, expectedRes):
     # take difference
@@ -392,53 +398,31 @@ def executeAutomatedTest(SerialNumber, CableType, Date, Time):
     #return True
 
 
-import errno
-from distutils.dir_util import copy_tree
-def copy(src, dest):
-    try:
-        shutil.copytree(src, dest)
-    except OSError as e:
-        # If the error was caused because the source wasn't a directory
-        if e.errno == errno.ENOTDIR:
-            shutil.copy(src, dest)
-        else:
-            print('Directory not copied. Error: %s' % e)
-def copytree2(source,dest):
-    os.mkdir(dest)
-    dest_dir = os.path.join(dest,os.path.basename(source))
-    shutil.copytree(source,dest_dir)
-if __name__ == '__main__':
-    #print(test1())
+
+def exportResults():
     path = "/media/pi"
+   #check if src directory even exists TODO
     if(os.path.exists(path)):
         files = os.listdir(path)
         if(len(files) == 0):
             print("No device connected")
         else:
             drive = files[0]
-            drivepath = path + "/" + drive
-            print(drivepath)
-            files = os.listdir(TEST_RESULTS_PATH)
-            print(files)
-            #copytree2(TEST_RESULTS_PATH,drivepath)
-#             if os.path.exists(drivepath + "/TEST_RESULTS"):
-#                    os.rmdir(drivepath + "/TEST_RESULTS")
+            drivepath = path + "/" + drive + "/TEST_RESULTS"
+           # print(drivepath)
+            #files = os.listdir(TEST_RESULTS_PATH)
+            #print(files)
+            if os.path.exists(drivepath):
+                   shutil.rmtree(drivepath)
                
-            os.mkdir(drivepath + "/TEST_RESULTS")
-            copy_tree(TEST_RESULTS_PATH, drivepath + "/TEST_RESULTS")
-            
-
-#             try:
-#                 shutil.copytree(TEST_RESULTS_PATH, drivepath)
-#             # Directories are the same
-#             except shutil.Error as e:
-#                 print('Directory not copied. Error: %s' % e)
-#             # Any error saying that the directory doesn't exist
-#             except OSError as e:
-#                 print('Directory not copied. Error: %s' % e)
-# 
-        
-    # executeAutomatedTest()
+            os.mkdir(drivepath)
+            copy_tree(TEST_RESULTS_PATH, drivepath)
+            print("Export successful")
+    
+if __name__ == '__main__':
+    exportResults()
+    #print(test1())
+     # executeAutomatedTest()
     # print("hello")
     #performCalibration(CABLET3)
     #executeAutomatedTest("Ser32", CABLET3, "2/28/2020", "1:29pm")
