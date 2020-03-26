@@ -24,7 +24,7 @@ CABLET3 = "J69278"
 CABLET4 = "J69749"
 calibrationState = True
 CableState = True
-
+isLeft = True
 def runAutomatedTest(DMM):
     return measureResistance(DMM)
 
@@ -271,14 +271,132 @@ def create_lut(CableType, dict):
     # Writing to sample.json
     with open(CableType + "_" + "Calibration.json", "w") as outfile:
         outfile.write(json_object)
+        
+#whichever one the user starts off with, it will test that one and return
+#the results, after this call is made message should be prompted to swap
+        
+def determine_measure_left_or_right(CableType):
+    global isLeft
+    lut = {}
+    file = load_config(CableType)
+    J7_LIST = [x for x in file if x['Tag'] == "J7"]
+    J6_LIST = [x for x in file if x['Tag'] == "J6"]
+    Connections = [x for x in file if x['Tag'] == "Connection_left"][0]
+    isLeft = True
+    for J7 in J7_LIST:
+        J7_GPIO_LOW = J7['GPIO_LOW']
+        J7_GPIO_HIGH = J7['GPIO_HIGH']
+        J7_I2C = J7['I2C']
+        for J6 in J6_LIST:
+            J6_I2C = J6['I2C']
+            J6_GPIO_LOW = J6['GPIO_LOW']
+            J6_GPIO_HIGH = J6['GPIO_HIGH']
+            MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
+            MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+            GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+            I2C_GPIO(J6_I2C, J7_I2C)
+            name = J7['Name'] + "-" + J6['Name']
+            sleep(.05)
+            res = 5 #float(run4AutomatedTest(DMM))#Assume left
+            #take all measurements for left
+            lut[name] = res
+        
+            if name in Connections['Name'] and res > 1000:
+                # if < 1000, for all left good connections,
+                #isLeft should stay true
+                isLeft = False
+                #if a single one is > 1000, we exit and
+                #invalidate results
+                lut = {}
+                #short circuit
+                break
+        if isLeft == False:
+            #short circuit
+            break
+      
+    if isLeft == False:
+        #its not the left, meaning its the right,
+        #measure all right, and return results
+            for J7 in J7_LIST:
+                J7_GPIO_LOW = J7['GPIO_LOW']
+                J7_GPIO_HIGH = J7['GPIO_HIGH']
+                J7_I2C = J7['I2C']
+                for J6 in J6_LIST:
+                    J6_I2C = J6['I2C']
+                    J6_GPIO_LOW = J6['GPIO_LOW']
+                    J6_GPIO_HIGH = J6['GPIO_HIGH']
+                    MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
+                    MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+                    GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+                    I2C_GPIO(J6_I2C, J7_I2C)
+                    name = J7['Name'] + "-" + J6['Name']
+                    sleep(.05)
+                    res = float(run4AutomatedTest(DMM))
+                    lut[name] = 1000
+                    break
+                
+    return lut
+    
+        
+def performSpecialCalibration(CableType,lut):
+    global DMM
+    global calibrationState
+    if DMM == None:
+        DMM = setup()
+    global isLeft   
+    calibrationState = False
+    file = load_config(CableType)
+    J7_LIST = [x for x in file if x['Tag'] == "J7"]
+    J6_LIST = [x for x in file if x['Tag'] == "J6"]
+    Connections_left = [x for x in file if x['Tag'] == "Connection_left"][0]
+    Connections_right = [x for x in file if x['Tag'] == "Connection_left"][0]
+
+    #could be left or right returned, just
+    #test other side now
+    for J7 in J7_LIST:
+            J7_GPIO_LOW = J7['GPIO_LOW']
+            J7_GPIO_HIGH = J7['GPIO_HIGH']
+            J7_I2C = J7['I2C']
+            for J6 in J6_LIST:
+                J6_I2C = J6['I2C']
+                J6_GPIO_LOW = J6['GPIO_LOW']
+                J6_GPIO_HIGH = J6['GPIO_HIGH']
+                MERGED_GPIO_LOW = list(dict.fromkeys(J7_GPIO_LOW + J6_GPIO_LOW))
+                MERGED_GPIO_HIGH = list(dict.fromkeys(J7_GPIO_HIGH + J6_GPIO_HIGH))
+                GPIO_SETUP(MERGED_GPIO_LOW, MERGED_GPIO_HIGH)
+                I2C_GPIO(J6_I2C, J7_I2C)
+                name = J7['Name'] + "-" + J6['Name']
+                sleep(.05)
+                res = float(run4AutomatedTest(DMM))
+    #             #res = random.randint(0, 100)
+                if isLeft:
+                    if name not in Connections_left:
+                        #so we dont override left results, we override
+                        #open results though..do we care?
+                        lut[name] = res
+                        break
+                else:
+                      if name not in Connections_right:
+                        #so we dont override right results, we override
+                        #open results though..do we care?
+                        lut[name] = res
+                
+    create_lut(CableType, lut)
+    calibrationState = True
 
 
+#for validation, check if connection combination exists in
+#left_connection + right_connection merged,
+#otherwise validateOpen
+#now it doesnt matter, which side when they are testing,
+#lut holds both left and right values
+    
 def performCalibration(CableType):
     global DMM
     global calibrationState
     if DMM == None:
         DMM = setup()
-    
+       
     calibrationState = False
 #     DMM.write("DISP OFF")
     lut = {}
@@ -405,7 +523,7 @@ def exportResults():
     if(os.path.exists(path)):
         files = os.listdir(path)
         if(len(files) == 0):
-            print("No device connected")
+            return False
         else:
             drive = files[0]
             drivepath = path + "/" + drive + "/TEST_RESULTS"
@@ -417,10 +535,27 @@ def exportResults():
                
             os.mkdir(drivepath)
             copy_tree(TEST_RESULTS_PATH, drivepath)
+            return True
             print("Export successful")
+def determineLeftRight():
+    return
+    #parse all good connections for left, measure
+    #the connections# check if < 1k,
+    #then it is the left,
+    # store it in JSON
+    #otherwise it is the right, store right to left
+    #store all values
+    #test left
+    #test right
+    #
     
+    
+    #validate as normal
+    
+    #
 if __name__ == '__main__':
-    exportResults()
+    #exportResults()
+    performSpecialCalibration("J69068")
     #print(test1())
      # executeAutomatedTest()
     # print("hello")
