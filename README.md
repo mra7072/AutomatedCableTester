@@ -23,10 +23,8 @@ Python Library dependecies
 For Users 
 1. Navigate to https://github.com/mra7072/AutomatedCableTester to download this repository and save to the directory of your choice
 2. Navigate to AutomatedCableTester/gui.py
-3. Execute script to start GUI either by double-clicking script or through a command line interface by running "python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment. Examples are shown below.
+3. Execute script to start GUI either by double-clicking script or through a command line interface by running "python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment. Images are shown below.
 
-![alt text](https://github.com/mra7072/AutomatedCableTester/blob/release/GIT_DOWNLOAD_CLONE.png)
-![alt text](https://github.com/mra7072/AutomatedCableTester/blob/release/cli.PNG)
 
 For Developers
 1. Clone this repository either through HTTP/SSH to the directory of your choice. Instructions to do this can be found here.https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
@@ -34,4 +32,8 @@ For Developers
 3. Changes can be made to the following files, which contain the logic for the entire system.
     - PayloadTester.py - Application/Backend 
     - gui.py - UI/Frontend
+
+
+![alt text](https://github.com/mra7072/AutomatedCableTester/blob/release/GIT_DOWNLOAD_CLONE.png)
+![alt text](https://github.com/mra7072/AutomatedCableTester/blob/release/cli.PNG)
 
