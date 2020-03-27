@@ -12,7 +12,7 @@ This system  is 100% functional on RASPBIAN BUSTER and has not been tested on di
 SW Dependencies
 - Python >=3.0 https://www.python.org/downloads/
 - pyvisa https://pyvisa.readthedocs.io/en/1.8/getting.html
-- GIT 
+- GIT https://git-scm.com/downloads
 
 Python Library dependecies 
 - tkinter https://tkdocs.com/tutorial/install.html
@@ -23,7 +23,7 @@ Python Library dependecies
 For Users 
 1. Navigate to https://github.com/mra7072/AutomatedCableTester to download this repository and save to the directory of your choice
 2. Navigate to AutomatedCableTester/gui.py
-3. Execute script to start GUI either by double-clicking script or through a command line interface by running "Python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment. Examples are shown below.
+3. Execute script to start GUI either by double-clicking script or through a command line interface by running "python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment. Examples are shown below.
 
 ![alt text](https://github.com/mra7072/AutomatedCableTester/blob/release/GIT_DOWNLOAD_CLONE.png)
 ![alt text](https://github.com/mra7072/AutomatedCableTester/blob/release/cli.PNG)
