@@ -21,10 +21,10 @@ For Users
 
 
 For Developers
-Clone this repository either through HTTP/SSH. Instructions can be found here.https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
+1.Clone this repository either through HTTP/SSH to the directory of your choice. Instructions to do this can be found here.https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
+2. Navigate AutomatedCableTester/
+
 The following files contain the logic for the entire system.
-
-PayloadTester.py - Application/Backend 
-gui.py - UI/Frontend
-
+- PayloadTester.py - Application/Backend 
+- gui.py - UI/Frontend
 
