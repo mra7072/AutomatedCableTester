@@ -2,7 +2,7 @@
 
 Installation -
 
-Please install the following dependecnies before proceeding. 
+Please configure your enviornment and install the following dependencies before proceeding. 
 
 OS 
 - Raspbian Buster
@@ -23,12 +23,10 @@ For Users
 2. Navigate to AutomatedCableTester/gui.py
 3. Execute script to start GUI either by double-clicking script or through a command line interface by running "Python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment 
 
-
 For Developers
-1.Clone this repository either through HTTP/SSH to the directory of your choice. Instructions to do this can be found here.https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
+1. Clone this repository either through HTTP/SSH to the directory of your choice. Instructions to do this can be found here.https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
 2. Navigate AutomatedCableTester/
-
-The following files contain the logic for the entire system.
+3. Changes can be made to the following files, which contain the logic for the entire system.
 - PayloadTester.py - Application/Backend 
 - gui.py - UI/Frontend
 
