@@ -6,6 +6,7 @@ Please configure your enviornment and install the following dependencies before 
 
 OS 
 - Raspbian Buster
+
 This system  is 100% functional on this OS and has not been tested on different platforms. However, minor adjustsment may be needed in when installing the following dependecies. Choose your OS specific configurations when installing the following dependencies. 
 
 SW Dependencies
@@ -27,6 +28,6 @@ For Developers
 1. Clone this repository either through HTTP/SSH to the directory of your choice. Instructions to do this can be found here.https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository
 2. Navigate AutomatedCableTester/
 3. Changes can be made to the following files, which contain the logic for the entire system.
-- PayloadTester.py - Application/Backend 
-- gui.py - UI/Frontend
+    - PayloadTester.py - Application/Backend 
+    - gui.py - UI/Frontend
 
