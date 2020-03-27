@@ -5,9 +5,9 @@ Installation -
 Please configure your enviornment and install the following dependencies before proceeding. 
 
 OS 
-- Raspbian Buster
+- RASPBIAN BUSTER
 
-This system  is 100% functional on this OS and has not been tested on different platforms. However, minor adjustsment may be needed in when installing the following dependecies. Choose your OS specific configurations when installing the following dependencies. 
+This system  is 100% functional on RASPBIAN BUSTER and has not been tested on different platforms. However, minor adjustsment may be needed  when installing the following dependencies. Choose your OS specific configurations when installing the following dependencies. 
 
 SW Dependencies
 - Python >=3.0 https://www.python.org/downloads/
