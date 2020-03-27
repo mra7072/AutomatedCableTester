@@ -22,8 +22,8 @@ Python Library dependecies
 
 For Users 
 1. Navigate to https://github.com/mra7072/AutomatedCableTester to download this repository and save to the directory of your choice
-2. Navigate to AutomatedCableTester/gui.py
-3. Execute script to start GUI either by double-clicking script or through a command line interface by running "python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment. Images are shown below.
+2. Navigate to AutomatedCableTester/
+3. Execute script to start program by either by double-clicking gui.py script or through a command line interface by running "python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment. Images are shown below.
 
 
 For Developers
