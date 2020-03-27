@@ -2,7 +2,11 @@
 
 Installation -
 
-Please install the following dependecnies before proceeding 
+Please install the following dependecnies before proceeding. 
+
+OS 
+- Raspbian Buster
+This system  is 100% functional on this OS and has not been tested on different platforms. However, minor adjustsment may be needed in when installing the following dependecies. Choose your OS specific configurations when installing the following dependencies. 
 
 SW Dependencies
 - Python >=3.0 https://www.python.org/downloads/
@@ -17,7 +21,7 @@ Python Library dependecies
 For Users 
 1. Download this repository and save to directory of your choice
 2. Navigate to AutomatedCableTester/gui.py
-3. Execute script to start GUI either by double-clicking script or through a command line interface by running "Python3 gui.py"
+3. Execute script to start GUI either by double-clicking script or through a command line interface by running "Python3 gui.py". System can be configured to run program on boot by editing your /rc.local enviorment 
 
 
 For Developers
