@@ -30,21 +30,6 @@ def Export():
         tkMessageBox.showinfo("STATUS", "Results were sucessfully exported")
 
 
-"""
-Calibration for Cable that requires swapping
-"""
-def calibrateSpecialCable():
-    lut = PT.determine_measure_left_or_right(PT.CABLET2)
-    yesSwap = tkMessageBox.showinfo("Confirm", "Please swap to test other side, click ok when ready")
-    group1.update()
-    if yesSwap:
-        group1.update()
-        print("hello")
-        PT.performSpecialCalibration(PT.CABLET2, lut)
-        if PT.calibrationState:
-            tkMessageBox.showinfo("Information", "Calibration successful")
-        else:
-            tkMessageBox.showerror("Calibration", "Error occured during calibration")
 
 """
 Event handler for cabibration 
@@ -55,7 +40,6 @@ def calibrateCable():
                                   "Are you sure you would like to calibrate cable type:" + CT + "." + "Existing calibration file will be overriden")
     group1.update()
     if yesNo:
-        if CT == PT.CABLET2:
             lut = PT.determine_measure_left_or_right(PT.CABLET2)
             yesSwap = tkMessageBox.showinfo("Confirm", "Please swap to test other side, click ok when ready")
             group1.update()
@@ -71,15 +55,6 @@ def calibrateCable():
                     tkMessageBox.showinfo("Information", "Calibration successful")
                 else:
                     tkMessageBox.showerror("Calibration", "Error occured during calibration")
-        else:
-            t = run_thread_calib('prepare', PT.performCalibration, CT)
-            t.start()
-            while t.is_alive():
-                group1.update()
-            if PT.calibrationState:
-                tkMessageBox.showinfo("Information", "Calibration successful")
-            else:
-                tkMessageBox.showerror("Calibration", "Error occured during calibration")
 
 
 """
